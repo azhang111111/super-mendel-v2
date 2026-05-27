@@ -283,29 +283,26 @@ class PieChartCanvas(FigureCanvas):
 
     def plot_abo(self, phenotype_counts):
         self.ax.clear()
-        labels = list(phenotype_counts.keys())
-        sizes = list(phenotype_counts.values())
-
-        if sum(sizes) == 0:
-            self.ax.text(0.5, 0.5, '无数据', ha='center', va='center',
-                        transform=self.ax.transAxes, fontsize=14,
-                        color=COLOR_TEXT_PRIMARY)
-            self.ax.set_title('ABO 血型分布', fontweight='bold',
-                            color=COLOR_TEXT_PRIMARY)
-            self.fig.tight_layout()
+        filtered = {k: v for k, v in phenotype_counts.items() if v > 0}
+        if not filtered:
+            self.ax.text(0.5, 0.5, '无数据', ha='center', va='center', fontsize=14)
+            self.ax.set_title('ABO 血型分布', fontweight='bold', color=COLOR_TEXT_PRIMARY)
             self.draw()
             return
-
-        colors_abo = ['#ef4444', '#3b82f6', '#8b5cf6', '#6b7280']
-
-        self.ax.pie(sizes, labels=labels, autopct='%1.1f%%',
-                    colors=colors_abo[:len(labels)],
-                    startangle=90, pctdistance=0.55,
-                    labeldistance=1.2, radius=0.75)
-        self.ax.set_title('ABO 血型分布', fontweight='bold',
-                         color=COLOR_TEXT_PRIMARY)
-        self.fig.subplots_adjust(left=0.05, right=0.95)
-        self.fig.tight_layout()
+        labels = list(filtered.keys())
+        sizes = list(filtered.values())
+        colors_abo = {'A型': '#ef4444', 'B型': '#3b82f6', 'AB型': '#8b5cf6', 'O型': '#6b7280'}
+        colors = [colors_abo[l] for l in labels]
+        wedges, _, autotexts = self.ax.pie(
+            sizes, labels=None, autopct='%1.1f%%',
+            colors=colors, startangle=90,
+            pctdistance=0.55, radius=0.75
+        )
+        self.ax.legend(wedges, labels, loc='lower center',
+                       bbox_to_anchor=(0.5, -0.15), ncol=min(len(labels), 2),
+                       fontsize=9, framealpha=0.8)
+        self.ax.set_title('ABO 血型分布', fontweight='bold', color=COLOR_TEXT_PRIMARY)
+        self.fig.subplots_adjust(bottom=0.2)
         self.draw()
 
 
