@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QGroupBox, QLabel,
     QComboBox, QSpinBox, QSlider, QPushButton,
     QProgressBar, QHBoxLayout, QStackedWidget,
-    QDoubleSpinBox, QLineEdit
+    QDoubleSpinBox, QLineEdit, QScrollArea
 )
 from PyQt6.QtCore import Qt
 from config import (
@@ -170,21 +170,31 @@ class ControlPanel(QWidget):
 
         count_row = QHBoxLayout()
         count_row.addWidget(QLabel("基因数："))
-        self.mg_gene_count = QSpinBox()
-        self.mg_gene_count.setRange(2, 4)
-        self.mg_gene_count.setValue(2)
-        self.mg_gene_count.valueChanged.connect(self._on_mg_gene_count_changed)
+        self.mg_gene_count = QComboBox()
+        self.mg_gene_count.addItems(["2个基因", "3个基因", "4个基因"])
+        self.mg_gene_count.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.mg_gene_count.currentIndexChanged.connect(self._on_mg_gene_count_changed)
         count_row.addWidget(self.mg_gene_count)
         count_row.addStretch()
         group_layout.addLayout(count_row)
 
-        self.mg_genes_layout = QVBoxLayout()
-        group_layout.addLayout(self.mg_genes_layout)
+        # 可滚动区域
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFixedHeight(200)
+        scroll_area.setStyleSheet("QScrollArea { border: 1px solid #aaa; }")
+
+        self.mg_genes_container = QWidget()
+        self.mg_genes_layout = QVBoxLayout(self.mg_genes_container)
+        self.mg_genes_layout.setSpacing(6)
+        self.mg_genes_layout.addStretch()
+
+        scroll_area.setWidget(self.mg_genes_container)
+        group_layout.addWidget(scroll_area)
 
         layout.addWidget(group)
         layout.addStretch()
 
-        self._input_widgets.append(self.mg_gene_count)
         self._mg_input_widgets = []
         self._build_mg_gene_inputs()
         return page
@@ -205,27 +215,40 @@ class ControlPanel(QWidget):
                 self._input_widgets.remove(w)
         self._mg_input_widgets.clear()
 
-        n = self.mg_gene_count.value()
+        n = self.mg_gene_count.currentIndex() + 2  # 0→2基因, 1→3基因, 2→4基因
         for i in range(n):
-            gene_group = QGroupBox(f"基因 {i + 1}")
-            gene_layout = QVBoxLayout(gene_group)
-            gene_layout.setSpacing(6)
+            row_widget = QWidget()
+            row = QHBoxLayout(row_widget)
+            row.setContentsMargins(0, 0, 0, 0)
+            row.setSpacing(4)
 
-            for parent_name, color in [("母本", COLOR_RECESSIVE), ("父本", COLOR_DOMINANT)]:
-                row = QHBoxLayout()
-                label = QLabel(f"{parent_name}基因型：")
-                label.setStyleSheet(f"color: {color}; font-weight: bold; font-size: 11px;")
-                edit = QLineEdit("Aa")
-                edit.setMaximumWidth(60)
-                row.addWidget(label)
-                row.addWidget(edit)
-                row.addStretch()
-                gene_layout.addLayout(row)
-                self._mg_input_widgets.append(edit)
+            gene_label = QLabel(f"基因{i + 1}：")
+            gene_label.setFixedWidth(45)
 
-            self.mg_genes_layout.addWidget(gene_group)
+            female_edit = QLineEdit("Aa")
+            female_edit.setPlaceholderText("母本")
+            female_edit.setMaximumWidth(60)
+
+            male_edit = QLineEdit("Aa")
+            male_edit.setPlaceholderText("父本")
+            male_edit.setMaximumWidth(60)
+
+            row.addWidget(gene_label)
+            row.addWidget(female_edit)
+            row.addWidget(male_edit)
+            row.addStretch()
+
+            # 插入到 stretch 之前
+            insert_at = self.mg_genes_layout.count() - 1  # stretch 在末尾
+            self.mg_genes_layout.insertWidget(insert_at, row_widget)
+
+            self._mg_input_widgets.extend([female_edit, male_edit])
 
         self._input_widgets.extend(self._mg_input_widgets)
+
+        # 强制显示新 widget
+        for w in self._mg_input_widgets:
+            w.show()
 
     @staticmethod
     def _clear_layout(layout):
@@ -236,7 +259,7 @@ class ControlPanel(QWidget):
             elif item.layout():
                 ControlPanel._clear_layout(item.layout())
 
-    def _on_mg_gene_count_changed(self, _value):
+    def _on_mg_gene_count_changed(self, _index):
         self._build_mg_gene_inputs()
 
     def _create_sex_page(self):
@@ -253,7 +276,8 @@ class ControlPanel(QWidget):
         mother_label.setStyleSheet(f"color: {COLOR_RECESSIVE}; font-weight: bold;")
         self.sex_mother_combo = QComboBox()
         self.sex_mother_combo.addItems(["X^A X^A", "X^A X^a", "X^a X^a"])
-        self.sex_mother_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.sex_mother_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+        self.sex_mother_combo.setMinimumWidth(130)
         mother_row.addWidget(mother_label)
         mother_row.addWidget(self.sex_mother_combo)
         mother_row.addStretch()
@@ -264,7 +288,8 @@ class ControlPanel(QWidget):
         father_label.setStyleSheet(f"color: {COLOR_DOMINANT}; font-weight: bold;")
         self.sex_father_combo = QComboBox()
         self.sex_father_combo.addItems(["X^A", "X^a"])
-        self.sex_father_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.sex_father_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+        self.sex_father_combo.setMinimumWidth(130)
         father_row.addWidget(father_label)
         father_row.addWidget(self.sex_father_combo)
         father_row.addStretch()
@@ -385,7 +410,7 @@ class ControlPanel(QWidget):
         if self.current_mode == "classic":
             params["female"], params["male"] = self.get_parents()
         elif self.current_mode == "multigene":
-            params["gene_count"] = self.mg_gene_count.value()
+            params["gene_count"] = self.mg_gene_count.currentIndex() + 2
             pairs = []
             for i in range(0, len(self._mg_input_widgets), 2):
                 f = self._mg_input_widgets[i].text()

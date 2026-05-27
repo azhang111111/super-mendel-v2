@@ -285,14 +285,26 @@ class PieChartCanvas(FigureCanvas):
         self.ax.clear()
         labels = list(phenotype_counts.keys())
         sizes = list(phenotype_counts.values())
+
+        if sum(sizes) == 0:
+            self.ax.text(0.5, 0.5, '无数据', ha='center', va='center',
+                        transform=self.ax.transAxes, fontsize=14,
+                        color=COLOR_TEXT_PRIMARY)
+            self.ax.set_title('ABO 血型分布', fontweight='bold',
+                            color=COLOR_TEXT_PRIMARY)
+            self.fig.tight_layout()
+            self.draw()
+            return
+
         colors_abo = ['#ef4444', '#3b82f6', '#8b5cf6', '#6b7280']
 
         self.ax.pie(sizes, labels=labels, autopct='%1.1f%%',
                     colors=colors_abo[:len(labels)],
-                    startangle=90, pctdistance=0.6,
-                    labeldistance=1.15, radius=0.8)
+                    startangle=90, pctdistance=0.55,
+                    labeldistance=1.2, radius=0.75)
         self.ax.set_title('ABO 血型分布', fontweight='bold',
                          color=COLOR_TEXT_PRIMARY)
+        self.fig.subplots_adjust(left=0.05, right=0.95)
         self.fig.tight_layout()
         self.draw()
 
@@ -311,11 +323,12 @@ class HistogramCanvas(FigureCanvas):
         self.ax.hist(values, bins=60, density=True, alpha=0.7,
                     color=COLOR_DOMINANT, edgecolor='white', linewidth=0.5)
 
-        x = np.linspace(mu - 4*sigma, mu + 4*sigma, 200)
-        pdf = (1.0 / (sigma * np.sqrt(2.0 * np.pi))) * \
-              np.exp(-0.5 * ((x - mu) / sigma) ** 2)
-        self.ax.plot(x, pdf, color=COLOR_RECESSIVE, linewidth=2.5,
-                    label=f'正态拟合 (μ={mu:.1f}, σ={sigma:.1f})')
+        if sigma > 0:
+            x = np.linspace(mu - 4*sigma, mu + 4*sigma, 200)
+            pdf = (1.0 / (sigma * np.sqrt(2.0 * np.pi))) * \
+                  np.exp(-0.5 * ((x - mu) / sigma) ** 2)
+            self.ax.plot(x, pdf, color=COLOR_RECESSIVE, linewidth=2.5,
+                        label=f'正态拟合 (μ={mu:.1f}, σ={sigma:.1f})')
 
         self.ax.axvline(mu, color=COLOR_THEORY_LINE, linestyle='--',
                        linewidth=1.5, alpha=0.7, label=f'均值={mu:.1f}')
