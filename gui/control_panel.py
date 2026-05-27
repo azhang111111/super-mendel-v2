@@ -181,7 +181,7 @@ class ControlPanel(QWidget):
         # 可滚动区域
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        scroll_area.setFixedHeight(200)
+        scroll_area.setFixedHeight(160)
         scroll_area.setStyleSheet("""
             QScrollArea {
                 background-color: #ffffff;
