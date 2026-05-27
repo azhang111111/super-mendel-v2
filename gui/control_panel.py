@@ -19,7 +19,6 @@ class ControlPanel(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedWidth(280)
         self.setObjectName("controlPanel")
         self.current_mode = "classic"
         self._input_widgets = []
@@ -301,6 +300,7 @@ class ControlPanel(QWidget):
             self._mg_input_combos.append((mother_combo, father_combo))
             self._mg_input_widgets.extend([mother_combo, father_combo])
 
+        self.mg_genes_layout.addSpacing(14)
         self.mg_genes_layout.addStretch()
         self._input_widgets.extend(self._mg_input_widgets)
 
