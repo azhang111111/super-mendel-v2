@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QGroupBox, QLabel,
     QComboBox, QSpinBox, QSlider, QPushButton,
     QProgressBar, QHBoxLayout, QStackedWidget,
-    QDoubleSpinBox, QLineEdit, QScrollArea
+    QDoubleSpinBox, QLineEdit, QScrollArea, QFrame
 )
 from PyQt6.QtCore import Qt
 from config import (
@@ -24,6 +24,7 @@ class ControlPanel(QWidget):
         self.current_mode = "classic"
         self._input_widgets = []
         self._mg_input_widgets = []
+        self._mg_input_combos = []
         self._preset_buttons = []
         self._init_ui()
 
@@ -223,7 +224,7 @@ class ControlPanel(QWidget):
         return page
 
     def _build_mg_gene_inputs(self):
-        """重建 MultiGenePage 中各基因的输入行"""
+        """重建 MultiGenePage 中各基因的输入块 (垂直布局)"""
         # 清空旧控件
         while self.mg_genes_layout.count():
             item = self.mg_genes_layout.takeAt(0)
@@ -237,41 +238,68 @@ class ControlPanel(QWidget):
             if w in self._input_widgets:
                 self._input_widgets.remove(w)
         self._mg_input_widgets.clear()
+        self._mg_input_combos.clear()
 
         n = self.mg_gene_count.currentIndex() + 2  # 0→2基因, 1→3基因, 2→4基因
         combo_options = ["AA", "Aa", "aa"]
-        row_height = 36
-        spacing = self.mg_genes_layout.spacing()
-        self.mg_genes_container.setMinimumHeight(n * row_height + (n - 1) * spacing + 16)
+
+        group_style = """
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                margin-top: 8px;
+                padding-top: 14px;
+                background-color: #ffffff;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 4px;
+            }
+        """
 
         for i in range(n):
-            row_widget = QWidget()
-            row_widget.setFixedHeight(row_height)
-            row_widget.setStyleSheet("background-color: #ffffff;")
-            row = QHBoxLayout(row_widget)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(4)
+            gene_box = QGroupBox(f"基因{i + 1}")
+            gene_box.setStyleSheet(group_style)
+            box_layout = QVBoxLayout(gene_box)
+            box_layout.setSpacing(4)
+            box_layout.setContentsMargins(10, 14, 10, 10)
 
-            gene_label = QLabel(f"基因{i + 1}：")
-            gene_label.setFixedWidth(45)
+            # 母本行
+            mother_row = QHBoxLayout()
+            mother_row.addWidget(QLabel("母本："))
+            mother_combo = QComboBox()
+            mother_combo.addItems(combo_options)
+            mother_combo.setCurrentIndex(1)
+            mother_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+            mother_row.addWidget(mother_combo)
+            mother_row.addStretch()
+            box_layout.addLayout(mother_row)
 
-            female_combo = QComboBox()
-            female_combo.addItems(combo_options)
-            female_combo.setCurrentIndex(1)  # 默认 Aa
-            female_combo.setMaximumWidth(60)
+            # 父本行
+            father_row = QHBoxLayout()
+            father_row.addWidget(QLabel("父本："))
+            father_combo = QComboBox()
+            father_combo.addItems(combo_options)
+            father_combo.setCurrentIndex(1)
+            father_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+            father_row.addWidget(father_combo)
+            father_row.addStretch()
+            box_layout.addLayout(father_row)
 
-            male_combo = QComboBox()
-            male_combo.addItems(combo_options)
-            male_combo.setCurrentIndex(1)  # 默认 Aa
-            male_combo.setMaximumWidth(60)
+            self.mg_genes_layout.addWidget(gene_box)
 
-            row.addWidget(gene_label)
-            row.addWidget(female_combo)
-            row.addWidget(male_combo)
-            row.addStretch()
+            # 分隔线 (除最后一个)
+            if i < n - 1:
+                sep = QFrame()
+                sep.setFrameShape(QFrame.Shape.HLine)
+                sep.setFixedHeight(1)
+                sep.setStyleSheet("background-color: #e2e8f0; border: none;")
+                self.mg_genes_layout.addWidget(sep)
 
-            self.mg_genes_layout.addWidget(row_widget)
-            self._mg_input_widgets.extend([female_combo, male_combo])
+            self._mg_input_combos.append((mother_combo, father_combo))
+            self._mg_input_widgets.extend([mother_combo, father_combo])
 
         self.mg_genes_layout.addStretch()
         self._input_widgets.extend(self._mg_input_widgets)
@@ -437,12 +465,7 @@ class ControlPanel(QWidget):
             params["female"], params["male"] = self.get_parents()
         elif self.current_mode == "multigene":
             params["gene_count"] = self.mg_gene_count.currentIndex() + 2
-            pairs = []
-            for i in range(0, len(self._mg_input_widgets), 2):
-                f = self._mg_input_widgets[i].currentText()
-                m = self._mg_input_widgets[i + 1].currentText() if i + 1 < len(self._mg_input_widgets) else "Aa"
-                pairs.append((f, m))
-            params["gene_pairs"] = pairs
+            params["gene_pairs"] = [(m.currentText(), f.currentText()) for m, f in self._mg_input_combos]
         elif self.current_mode == "sex":
             params["mother_x"] = self.sex_mother_combo.currentText()
             params["father_x"] = self.sex_father_combo.currentText()
