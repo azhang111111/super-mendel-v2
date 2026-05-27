@@ -289,7 +289,8 @@ class PieChartCanvas(FigureCanvas):
 
         self.ax.pie(sizes, labels=labels, autopct='%1.1f%%',
                     colors=colors_abo[:len(labels)],
-                    startangle=90, pctdistance=0.85)
+                    startangle=90, pctdistance=0.6,
+                    labeldistance=1.15, radius=0.8)
         self.ax.set_title('ABO 血型分布', fontweight='bold',
                          color=COLOR_TEXT_PRIMARY)
         self.fig.tight_layout()
