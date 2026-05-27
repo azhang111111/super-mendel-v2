@@ -86,6 +86,21 @@ class SimulationWorker(QThread):
         father_X = self.params["father_X"]
         N = self.params["num_simulations"]
 
+        # 如果传入的是字符串 "X^A X^a"，拆分为列表 ['X^A', 'X^a']
+        if isinstance(mother_X, str):
+            mother_X = mother_X.strip().split()
+            if len(mother_X) == 0:
+                raise ValueError("母亲 X 等位基因不能为空")
+            if len(mother_X) != 2:
+                raise ValueError(f"母亲 X 等位基因需要恰好 2 个，收到 {len(mother_X)} 个: {mother_X}")
+
+        # 父亲只有一条 X（生物学上），支持字符串传入但保持标量类型
+        # 如果误传了多等位基因字符串，检测并报错
+        if isinstance(father_X, str):
+            father_X = father_X.strip()
+            if " " in father_X:
+                raise ValueError(f"父亲 X 等位基因应为单个值（如 'X^A'），收到含空格的字符串: '{father_X}'")
+
         result = simulate_sex_chromosome_crossover(mother_X, father_X, N)
         # 附加亲本信息供统计使用
         result["_mother_alleles"] = mother_X
@@ -100,6 +115,20 @@ class SimulationWorker(QThread):
         p1 = self.params["parent1_genotype"]
         p2 = self.params["parent2_genotype"]
         N = self.params["num_simulations"]
+
+        # 如果传入的是字符串 "I^A I^A"，拆分为列表 ['I^A', 'I^A']
+        if isinstance(p1, str):
+            p1 = p1.strip().split()
+            if len(p1) == 0:
+                raise ValueError("母本 ABO 基因型不能为空")
+            if len(p1) != 2:
+                raise ValueError(f"母本 ABO 基因型需要恰好 2 个等位基因，收到 {len(p1)} 个: {p1}")
+        if isinstance(p2, str):
+            p2 = p2.strip().split()
+            if len(p2) == 0:
+                raise ValueError("父本 ABO 基因型不能为空")
+            if len(p2) != 2:
+                raise ValueError(f"父本 ABO 基因型需要恰好 2 个等位基因，收到 {len(p2)} 个: {p2}")
 
         result = simulate_abo_crossover(p1, p2, N)
         self.progress_updated.emit(N, N)
