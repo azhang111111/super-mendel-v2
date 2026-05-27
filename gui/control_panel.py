@@ -182,12 +182,35 @@ class ControlPanel(QWidget):
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setFixedHeight(200)
-        scroll_area.setStyleSheet("QScrollArea { border: 1px solid #aaa; }")
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                background-color: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+            }
+            QScrollArea > QWidget > QWidget {
+                background-color: #ffffff;
+            }
+            QScrollBar:vertical {
+                width: 6px;
+                background: transparent;
+                border: none;
+            }
+            QScrollBar::handle:vertical {
+                background: #cbd5e1;
+                border-radius: 3px;
+                min-height: 20px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
 
         self.mg_genes_container = QWidget()
+        self.mg_genes_container.setStyleSheet("background-color: #ffffff;")
         self.mg_genes_layout = QVBoxLayout(self.mg_genes_container)
         self.mg_genes_layout.setSpacing(6)
-        self.mg_genes_layout.addStretch()
+        self.mg_genes_layout.setContentsMargins(8, 8, 8, 8)
 
         scroll_area.setWidget(self.mg_genes_container)
         group_layout.addWidget(scroll_area)
@@ -216,8 +239,15 @@ class ControlPanel(QWidget):
         self._mg_input_widgets.clear()
 
         n = self.mg_gene_count.currentIndex() + 2  # 0→2基因, 1→3基因, 2→4基因
+        combo_options = ["AA", "Aa", "aa"]
+        row_height = 36
+        spacing = self.mg_genes_layout.spacing()
+        self.mg_genes_container.setMinimumHeight(n * row_height + (n - 1) * spacing + 16)
+
         for i in range(n):
             row_widget = QWidget()
+            row_widget.setFixedHeight(row_height)
+            row_widget.setStyleSheet("background-color: #ffffff;")
             row = QHBoxLayout(row_widget)
             row.setContentsMargins(0, 0, 0, 0)
             row.setSpacing(4)
@@ -225,30 +255,26 @@ class ControlPanel(QWidget):
             gene_label = QLabel(f"基因{i + 1}：")
             gene_label.setFixedWidth(45)
 
-            female_edit = QLineEdit("Aa")
-            female_edit.setPlaceholderText("母本")
-            female_edit.setMaximumWidth(60)
+            female_combo = QComboBox()
+            female_combo.addItems(combo_options)
+            female_combo.setCurrentIndex(1)  # 默认 Aa
+            female_combo.setMaximumWidth(60)
 
-            male_edit = QLineEdit("Aa")
-            male_edit.setPlaceholderText("父本")
-            male_edit.setMaximumWidth(60)
+            male_combo = QComboBox()
+            male_combo.addItems(combo_options)
+            male_combo.setCurrentIndex(1)  # 默认 Aa
+            male_combo.setMaximumWidth(60)
 
             row.addWidget(gene_label)
-            row.addWidget(female_edit)
-            row.addWidget(male_edit)
+            row.addWidget(female_combo)
+            row.addWidget(male_combo)
             row.addStretch()
 
-            # 插入到 stretch 之前
-            insert_at = self.mg_genes_layout.count() - 1  # stretch 在末尾
-            self.mg_genes_layout.insertWidget(insert_at, row_widget)
+            self.mg_genes_layout.addWidget(row_widget)
+            self._mg_input_widgets.extend([female_combo, male_combo])
 
-            self._mg_input_widgets.extend([female_edit, male_edit])
-
+        self.mg_genes_layout.addStretch()
         self._input_widgets.extend(self._mg_input_widgets)
-
-        # 强制显示新 widget
-        for w in self._mg_input_widgets:
-            w.show()
 
     @staticmethod
     def _clear_layout(layout):
@@ -413,8 +439,8 @@ class ControlPanel(QWidget):
             params["gene_count"] = self.mg_gene_count.currentIndex() + 2
             pairs = []
             for i in range(0, len(self._mg_input_widgets), 2):
-                f = self._mg_input_widgets[i].text()
-                m = self._mg_input_widgets[i + 1].text() if i + 1 < len(self._mg_input_widgets) else "Aa"
+                f = self._mg_input_widgets[i].currentText()
+                m = self._mg_input_widgets[i + 1].currentText() if i + 1 < len(self._mg_input_widgets) else "Aa"
                 pairs.append((f, m))
             params["gene_pairs"] = pairs
         elif self.current_mode == "sex":
