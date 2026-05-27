@@ -186,9 +186,14 @@ class HeatmapCanvas(FigureCanvas):
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.setParent(parent)
+        self._cbar = None
 
     def plot_heatmap(self, result_dict, gene_a_label="A", gene_b_label="B"):
         """将多基因结果转为 2D 矩阵绘制热力图"""
+        # 清除旧 colorbar（避免叠加）
+        if self._cbar is not None:
+            self._cbar.remove()
+            self._cbar = None
         self.ax.clear()
         rows = set()
         cols = set()
@@ -209,7 +214,7 @@ class HeatmapCanvas(FigureCanvas):
                 matrix[i, j] = count
 
         im = self.ax.imshow(matrix, cmap='Blues', aspect='auto')
-        self.fig.colorbar(im, ax=self.ax, label='Count')
+        self._cbar = self.fig.colorbar(im, ax=self.ax, label='Count')
         self.ax.set_xticks(range(len(cols)))
         self.ax.set_xticklabels(cols)
         self.ax.set_yticks(range(len(rows)))
