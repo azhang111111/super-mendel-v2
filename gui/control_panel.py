@@ -84,6 +84,7 @@ class ControlPanel(QWidget):
         self.count_spin.setRange(10, 10_000_000)
         self.count_spin.setSingleStep(1000)
         self.count_spin.setValue(10000)
+        self.count_spin.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         self.count_spin.setStyleSheet("font-size: 14px; font-weight: bold;")
         self.count_spin.valueChanged.connect(self._on_spin_changed)
         spin_row.addWidget(spin_label)
@@ -401,35 +402,43 @@ class ControlPanel(QWidget):
 
         count_row = QHBoxLayout()
         count_row.addWidget(QLabel("基因数："))
-        self.pg_gene_count = QSpinBox()
-        self.pg_gene_count.setRange(2, 4)
-        self.pg_gene_count.setValue(2)
-        self.pg_gene_count.setKeyboardTracking(False)
-        self.pg_gene_count.setAccelerated(True)
-        self.pg_gene_count.setButtonSymbols(QSpinBox.ButtonSymbols.UpDownArrows)
+        self.pg_gene_count = QComboBox()
+        self.pg_gene_count.addItems(["2个基因", "3个基因", "4个基因"])
+        self.pg_gene_count.setCurrentIndex(0)
+        self.pg_gene_count.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         count_row.addWidget(self.pg_gene_count)
         count_row.addStretch()
         group_layout.addLayout(count_row)
 
         base_row = QHBoxLayout()
         base_row.addWidget(QLabel("基准值："))
-        self.pg_base = QDoubleSpinBox()
-        self.pg_base.setRange(0, 10000)
-        self.pg_base.setValue(170.0)
-        self.pg_base.setDecimals(1)
+        self.pg_base = QComboBox()
+        self.pg_base.setEditable(True)
+        self.pg_base.addItems(["150.0", "160.0", "170.0", "180.0", "190.0"])
+        self.pg_base.setCurrentText("170.0")
         base_row.addWidget(self.pg_base)
         base_row.addStretch()
         group_layout.addLayout(base_row)
 
         noise_row = QHBoxLayout()
         noise_row.addWidget(QLabel("噪声："))
-        self.pg_noise = QDoubleSpinBox()
-        self.pg_noise.setRange(0, 1000)
-        self.pg_noise.setValue(2.0)
-        self.pg_noise.setDecimals(1)
+        self.pg_noise = QComboBox()
+        self.pg_noise.setEditable(True)
+        self.pg_noise.addItems(["1.0", "1.5", "2.0", "3.0", "5.0"])
+        self.pg_noise.setCurrentText("2.0")
         noise_row.addWidget(self.pg_noise)
         noise_row.addStretch()
         group_layout.addLayout(noise_row)
+
+        combo_style = """
+            QComboBox {
+                border-radius: 4px;
+                border: 1px solid #e2e8f0;
+                padding: 4px 8px;
+            }
+        """
+        for cb in [self.pg_gene_count, self.pg_base, self.pg_noise]:
+            cb.setStyleSheet(combo_style)
 
         layout.addWidget(group)
         layout.addStretch()
@@ -473,9 +482,9 @@ class ControlPanel(QWidget):
             params["mother_abo"] = self.abo_mother_combo.currentText()
             params["father_abo"] = self.abo_father_combo.currentText()
         elif self.current_mode == "polygenic":
-            params["gene_count"] = self.pg_gene_count.value()
-            params["base_value"] = self.pg_base.value()
-            params["noise"] = self.pg_noise.value()
+            params["gene_count"] = self.pg_gene_count.currentIndex() + 2
+            params["base_value"] = float(self.pg_base.currentText())
+            params["noise"] = float(self.pg_noise.currentText())
         return params
 
     # ── 公开 API（保持向后兼容）──

@@ -83,7 +83,9 @@ def simulate_multigene_crossover(parent1_gtypes, parent2_gtypes, num_simulations
 
     返回: dict, 键为 "AA|Bb|CC" (|分隔防歧义), 值为计数
     """
-    num_genes = len(parent1_gtypes)
+    num_genes = min(len(parent1_gtypes), len(parent2_gtypes))
+    if num_genes == 0:
+        return {}
 
     all_zygote_parts = []
     for i in range(num_genes):

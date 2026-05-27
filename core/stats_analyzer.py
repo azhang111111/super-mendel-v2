@@ -174,12 +174,7 @@ def analyze_sex_linked_stats(result, total_simulations):
     性染色体统计包装 (调用 sex_chromosome.analyze_sex_linked 后格式化输出)
     """
     from core.sex_chromosome import analyze_sex_linked
-    # result 来自 simulate_sex_chromosome_crossover
-    analysis = analyze_sex_linked(
-        result,
-        result.get("_mother_alleles", ["X^A", "X^a"]),
-        result.get("_father_allele", "X^A"),
-    )
+    analysis = analyze_sex_linked(result)
     return {
         "total_simulations": total_simulations,
         "daughter_count": result.get("女儿数", 0),
@@ -207,6 +202,9 @@ def analyze_polygenic_stats_wrapper(values, expected_mean=None):
     stats["fit_mean"] = round(mu, 2)
     stats["fit_std"] = round(sigma, 2)
     stats["values"] = values
+    stats["min"] = round(float(np.min(values)), 2)
+    stats["max"] = round(float(np.max(values)), 2)
+    stats["median"] = round(float(np.median(values)), 2)
     return stats
 
 
@@ -242,16 +240,18 @@ def generate_multimode_report(mode, engine_result, params, total_simulations):
             engine_result,
             params.get("expected_mean"),
         ))
-    else:
-        # classic 模式回退到 v1.0 的 generate_summary_report
+    elif mode == "classic":
         from core.crossover_engine import calculate_convergence_curve
-        result_dict, gametes1, gametes2 = engine_result
-        conv = calculate_convergence_curve(gametes1, gametes2)
-        report.update(generate_summary_report(
-            result_dict, total_simulations,
-            params.get("parent1", "Aa"),
-            params.get("parent2", "Aa"),
-            conv,
-        ))
+        if isinstance(engine_result, tuple) and len(engine_result) == 3:
+            result_dict, gametes1, gametes2 = engine_result
+            conv = calculate_convergence_curve(gametes1, gametes2)
+            report.update(generate_summary_report(
+                result_dict, total_simulations,
+                params.get("parent1", "Aa"),
+                params.get("parent2", "Aa"),
+                conv,
+            ))
+        else:
+            report["error"] = "classic 模式引擎结果格式不符预期"
 
     return report

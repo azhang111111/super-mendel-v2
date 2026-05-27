@@ -176,11 +176,13 @@ class MainWindow(QMainWindow):
             worker_params["parent1_gtypes"] = ["Aa"] * gene_n
             worker_params["parent2_gtypes"] = ["Aa"] * gene_n
             worker_params["base_value"] = params["base_value"]
+            worker_params["noise_std"] = params["noise"]
             worker_params["effects"] = None
             status_info = f"数量性状 ({gene_n} 基因)"
 
         # 设置运行状态
         self.control_panel.set_running_state(True)
+        self.mode_selector.setEnabled(False)
         self.status_label.setText(
             f"运行中：{status_info} | {count:,} 次模拟..."
         )
@@ -213,6 +215,7 @@ class MainWindow(QMainWindow):
     def _on_finished(self, report):
         """计算完成槽函数 (v2.0 多模式)"""
         self.control_panel.set_running_state(False)
+        self.mode_selector.setEnabled(True)
         mode = report.get("mode", "classic")
         total = report["total_simulations"]
 
@@ -311,6 +314,7 @@ class MainWindow(QMainWindow):
     def _on_error(self, error_msg):
         """错误处理"""
         self.control_panel.set_running_state(False)
+        self.mode_selector.setEnabled(True)
         self.status_label.setText(f"错误：{error_msg}")
         self.status_label.setStyleSheet("""
             color: #dc2626;

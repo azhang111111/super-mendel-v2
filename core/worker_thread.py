@@ -145,9 +145,10 @@ class SimulationWorker(QThread):
         effects = self.params.get("effects")
         base = self.params.get("base_value", 170.0)
 
+        noise_std = self.params.get("noise_std", 2.0)
         values = simulate_polygenic_trait(
             num_genes, p1, p2, effects=effects,
-            base_value=base, num_simulations=N
+            base_value=base, noise_std=noise_std, num_simulations=N
         )
         self.progress_updated.emit(N, N)
         report = generate_multimode_report("polygenic", values, self.params, N)

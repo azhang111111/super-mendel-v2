@@ -51,12 +51,9 @@ def simulate_sex_chromosome_crossover(mother_X_alleles, father_X_allele, num_sim
     }
 
 
-def analyze_sex_linked(result, mother_X, father_X):
+def analyze_sex_linked(result):
     """
     按性别分层统计, 包含半合子表现型判定。
-
-    mother_X: 母亲的等位基因列表, 如 ['X^A', 'X^a']
-    father_X: 父亲的 X 等位基因, 如 'X^A'
 
     X连锁隐性遗传: 大写字母 = 正常显性, 小写字母 = 突变隐性
     儿子只有一条X, 直接表现该X上的等位基因。
