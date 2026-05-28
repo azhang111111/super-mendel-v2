@@ -107,7 +107,6 @@ class ControlPanel(QWidget):
             }}
         """)
         self.run_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        layout.addWidget(self.run_button)
 
         # ── 进度条 ──
         self.progress_bar = QProgressBar()
@@ -115,11 +114,11 @@ class ControlPanel(QWidget):
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("就绪")
-        layout.addWidget(self.progress_bar)
-
-        layout.addWidget(sim_group)
 
         layout.addStretch()
+        layout.addWidget(sim_group)
+        layout.addWidget(self.run_button)
+        layout.addWidget(self.progress_bar)
 
     # ── Page factories ──
 
