@@ -9,7 +9,8 @@ from PyQt6.QtGui import QFont
 
 from config import (
     COLOR_BG_MAIN, COLOR_BG_PANEL, COLOR_TEXT_PRIMARY,
-    COLOR_TEXT_SECONDARY, COLOR_DOMINANT, COLOR_THEORY_LINE
+    COLOR_TEXT_SECONDARY, COLOR_DOMINANT, COLOR_THEORY_LINE,
+    MODE_DESCRIPTIONS,
 )
 from gui.mode_selector import ModeSelector
 from gui.control_panel import ControlPanel
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
             }}
         """)
         self.tab_widget.addTab(self.help_text, "📖 说明")
+        self.help_text.setPlainText(MODE_DESCRIPTIONS["classic"])
 
         right_layout.addWidget(self.tab_widget)
 
@@ -146,7 +148,6 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.mode_selector)
 
         # ── 顶部提示条 ──
-        from config import MODE_DESCRIPTIONS
         self.tip_label = QLabel(MODE_DESCRIPTIONS["classic"])
         self.tip_label.setStyleSheet(f"""
             color: {COLOR_TEXT_SECONDARY};
@@ -172,7 +173,6 @@ class MainWindow(QMainWindow):
 
     def _on_mode_changed(self, mode):
         """模式切换时更新提示条和说明页"""
-        from config import MODE_DESCRIPTIONS
         desc = MODE_DESCRIPTIONS.get(mode, "")
         self.tip_label.setText(desc)
         self.help_text.setPlainText(desc)
