@@ -97,8 +97,6 @@ class ControlPanel(QWidget):
         self.count_slider.valueChanged.connect(self._on_slider_changed)
         sim_layout.addWidget(self.count_slider)
 
-        layout.addWidget(sim_group)
-
         # ── 开始按钮 ──
         self.run_button = QPushButton("开始模拟")
         self.run_button.setMinimumHeight(44)
@@ -118,6 +116,8 @@ class ControlPanel(QWidget):
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("就绪")
         layout.addWidget(self.progress_bar)
+
+        layout.addWidget(sim_group)
 
         layout.addStretch()
 
