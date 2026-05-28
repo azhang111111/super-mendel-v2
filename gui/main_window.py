@@ -41,14 +41,14 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setHandleWidth(1)
 
-        # ── 左侧：模式选择 + 控制面板 ──
+        # ── 顶部：遗传模式下拉框 ──
+        self.mode_selector = ModeSelector()
+
+        # ── 左侧：控制面板 ──
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(6)
-
-        self.mode_selector = ModeSelector()
-        left_layout.addWidget(self.mode_selector)
 
         self.control_panel = ControlPanel()
         left_layout.addWidget(self.control_panel)
@@ -125,8 +125,10 @@ class MainWindow(QMainWindow):
         splitter.addWidget(right_widget)
         splitter.setSizes([280, 1000])
 
-        main_layout = QHBoxLayout(central)
+        main_layout = QVBoxLayout(central)
         main_layout.setContentsMargins(4, 4, 4, 4)
+        main_layout.setSpacing(4)
+        main_layout.addWidget(self.mode_selector)
         main_layout.addWidget(splitter)
 
         # ── 状态栏 ──
