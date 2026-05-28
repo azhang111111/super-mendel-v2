@@ -99,7 +99,6 @@ class BarChartCanvas(FigureCanvas):
                        fontsize=9, framealpha=0.9)
 
         self.draw()
-        self.draw()
 
 
 class ConvergenceCanvas(FigureCanvas):
@@ -170,7 +169,6 @@ class ConvergenceCanvas(FigureCanvas):
                                          color=COLOR_DOMINANT, lw=1.0))
 
         self.draw()
-        self.draw()
 
 
 # ══════════════════════════════════════════════
@@ -236,7 +234,6 @@ class HeatmapCanvas(FigureCanvas):
                     self.ax.text(j, i, str(val), ha='center', va='center',
                                 color=color, fontsize=9)
         self.draw()
-        self.draw()
 
 
 class GroupedBarCanvas(FigureCanvas):
@@ -277,7 +274,6 @@ class GroupedBarCanvas(FigureCanvas):
         self.ax.set_title('X 连锁遗传 — 按性别分层', fontweight='bold',
                          color=COLOR_TEXT_PRIMARY)
         self.ax.legend()
-        self.draw()
         self.draw()
 
 
@@ -323,7 +319,7 @@ class HistogramCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
+        self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
 
     def plot_histogram(self, values, mu, sigma):
@@ -347,7 +343,6 @@ class HistogramCanvas(FigureCanvas):
                          color=COLOR_TEXT_PRIMARY)
         self.ax.legend(fontsize=9)
         self.draw()
-        self.draw()
 
 
 class PunnettCanvas(FigureCanvas):
@@ -357,7 +352,6 @@ class PunnettCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
         self.fig.set_tight_layout(True)
         self.setParent(parent)
 
