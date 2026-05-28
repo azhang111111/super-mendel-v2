@@ -31,8 +31,9 @@ class BarChartCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
         self.setParent(parent)
-        self.fig.tight_layout()
+        self.draw()
 
     def plot_results(self, phenotype_counts, phenotype_ratios,
                      theory_dominant=0.75, theory_recessive=0.25,
@@ -97,7 +98,7 @@ class BarChartCanvas(FigureCanvas):
         self.ax.legend(handles=legend_elements, loc='upper right',
                        fontsize=9, framealpha=0.9)
 
-        self.fig.tight_layout()
+        self.draw()
         self.draw()
 
 
@@ -108,8 +109,9 @@ class ConvergenceCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
         self.setParent(parent)
-        self.fig.tight_layout()
+        self.draw()
 
     def plot_convergence(self, x_data, y_data, total_simulations,
                          theory_ratio=0.75, parent1='Aa', parent2='Aa'):
@@ -167,7 +169,7 @@ class ConvergenceCanvas(FigureCanvas):
                          arrowprops=dict(arrowstyle='->',
                                          color=COLOR_DOMINANT, lw=1.0))
 
-        self.fig.tight_layout()
+        self.draw()
         self.draw()
 
 
@@ -185,6 +187,7 @@ class HeatmapCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
         self.setParent(parent)
         self._cbar = None
 
@@ -232,7 +235,7 @@ class HeatmapCanvas(FigureCanvas):
                     color = 'white' if matrix[i, j] > matrix.max() * 0.7 else 'black'
                     self.ax.text(j, i, str(val), ha='center', va='center',
                                 color=color, fontsize=9)
-        self.fig.tight_layout()
+        self.draw()
         self.draw()
 
 
@@ -243,6 +246,7 @@ class GroupedBarCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
         self.setParent(parent)
 
     def plot_sex_linked(self, daughter_stats, son_stats):
@@ -273,7 +277,7 @@ class GroupedBarCanvas(FigureCanvas):
         self.ax.set_title('X 连锁遗传 — 按性别分层', fontweight='bold',
                          color=COLOR_TEXT_PRIMARY)
         self.ax.legend()
-        self.fig.tight_layout()
+        self.draw()
         self.draw()
 
 
@@ -284,6 +288,7 @@ class PieChartCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
         self.setParent(parent)
 
     def plot_abo(self, phenotype_counts):
@@ -318,6 +323,7 @@ class HistogramCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
         self.setParent(parent)
 
     def plot_histogram(self, values, mu, sigma):
@@ -340,7 +346,7 @@ class HistogramCanvas(FigureCanvas):
         self.ax.set_title('多基因数量性状分布 + 正态拟合', fontweight='bold',
                          color=COLOR_TEXT_PRIMARY)
         self.ax.legend(fontsize=9)
-        self.fig.tight_layout()
+        self.draw()
         self.draw()
 
 
@@ -351,6 +357,7 @@ class PunnettCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
         self.fig.set_tight_layout(True)
         self.setParent(parent)
 
