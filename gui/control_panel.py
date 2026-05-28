@@ -182,7 +182,9 @@ class ControlPanel(QWidget):
         # 可滚动区域
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_area.setFixedHeight(160)
+        self.mg_scroll_area = scroll_area
         scroll_area.setStyleSheet("""
             QScrollArea {
                 background-color: #ffffff;
@@ -214,6 +216,7 @@ class ControlPanel(QWidget):
         self.mg_genes_layout.setContentsMargins(8, 8, 8, 8)
 
         scroll_area.setWidget(self.mg_genes_container)
+        self.mg_genes_container.setMinimumWidth(scroll_area.viewport().width())
         group_layout.addWidget(scroll_area)
 
         layout.addWidget(group)
@@ -304,6 +307,10 @@ class ControlPanel(QWidget):
         self.mg_genes_layout.addSpacing(14)
         self.mg_genes_layout.addStretch()
         self._input_widgets.extend(self._mg_input_widgets)
+
+        viewport_w = self.mg_scroll_area.viewport().width()
+        if viewport_w > 0:
+            self.mg_genes_container.setMinimumWidth(viewport_w)
 
     @staticmethod
     def _clear_layout(layout):
@@ -463,6 +470,8 @@ class ControlPanel(QWidget):
         idx = index_map.get(mode, 0)
         self.stacked.setCurrentIndex(idx)
         self.current_mode = mode
+        if mode == "multigene":
+            self._build_mg_gene_inputs()
 
     def get_params(self):
         """从当前页获取参数，返回 dict"""
