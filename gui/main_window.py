@@ -109,6 +109,21 @@ class MainWindow(QMainWindow):
         """)
         self.tab_widget.addTab(self.report_text, "📋 统计报告")
 
+        # Tab 3：模式说明
+        self.help_text = QTextEdit()
+        self.help_text.setReadOnly(True)
+        self.help_text.setFont(QFont("Microsoft YaHei", 11))
+        self.help_text.setStyleSheet(f"""
+            QTextEdit {{
+                background-color: {COLOR_BG_PANEL};
+                color: {COLOR_TEXT_PRIMARY};
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                padding: 16px;
+            }}
+        """)
+        self.tab_widget.addTab(self.help_text, "📖 说明")
+
         right_layout.addWidget(self.tab_widget)
 
         # ── 状态标签 ──
@@ -129,6 +144,20 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(4, 4, 4, 4)
         main_layout.setSpacing(4)
         main_layout.addWidget(self.mode_selector)
+
+        # ── 顶部提示条 ──
+        from config import MODE_DESCRIPTIONS
+        self.tip_label = QLabel(MODE_DESCRIPTIONS["classic"])
+        self.tip_label.setStyleSheet(f"""
+            color: {COLOR_TEXT_SECONDARY};
+            font-size: 11px;
+            padding: 4px 8px;
+            background-color: {COLOR_BG_PANEL};
+            border-radius: 4px;
+        """)
+        self.tip_label.setWordWrap(True)
+        main_layout.addWidget(self.tip_label)
+
         main_layout.addWidget(splitter)
 
         # ── 状态栏 ──
@@ -139,6 +168,14 @@ class MainWindow(QMainWindow):
         # ── 信号连接 ──
         self.control_panel.run_button.clicked.connect(self._start_simulation)
         self.mode_selector.mode_changed.connect(self.control_panel.switch_mode)
+        self.mode_selector.mode_changed.connect(self._on_mode_changed)
+
+    def _on_mode_changed(self, mode):
+        """模式切换时更新提示条和说明页"""
+        from config import MODE_DESCRIPTIONS
+        desc = MODE_DESCRIPTIONS.get(mode, "")
+        self.tip_label.setText(desc)
+        self.help_text.setPlainText(desc)
 
     def _apply_styles(self):
         """应用全局样式"""
