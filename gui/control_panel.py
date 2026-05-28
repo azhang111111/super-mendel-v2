@@ -182,7 +182,7 @@ class ControlPanel(QWidget):
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setFixedHeight(160)
+        scroll_area.setFixedHeight(240)
         self.mg_scroll_area = scroll_area
         scroll_area.setStyleSheet("""
             QScrollArea {
