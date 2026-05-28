@@ -16,7 +16,8 @@ from gui.mode_selector import ModeSelector
 from gui.control_panel import ControlPanel
 from gui.chart_widget import (
     BarChartCanvas, ConvergenceCanvas,
-    HeatmapCanvas, GroupedBarCanvas, PieChartCanvas, HistogramCanvas
+    HeatmapCanvas, GroupedBarCanvas, PieChartCanvas, HistogramCanvas,
+    PunnettCanvas
 )
 from core.worker_thread import SimulationWorker
 
@@ -92,6 +93,10 @@ class MainWindow(QMainWindow):
         self.histogram_canvas = HistogramCanvas()
         self.histogram_canvas.hide()
         chart_layout.addWidget(self.histogram_canvas)
+
+        self.punnett_canvas = PunnettCanvas()
+        self.punnett_canvas.hide()
+        chart_layout.addWidget(self.punnett_canvas)
 
         self.tab_widget.addTab(chart_tab, "📊 实时图表")
 
@@ -265,6 +270,7 @@ class MainWindow(QMainWindow):
         self.grouped_bar_canvas.hide()
         self.pie_chart_canvas.hide()
         self.histogram_canvas.hide()
+        self.punnett_canvas.hide()
 
         # ── 根据模式显示对应图表 ──
         if mode == "classic":
@@ -287,12 +293,20 @@ class MainWindow(QMainWindow):
                 parent1=report["parent1"],
                 parent2=report["parent2"],
             )
+            self.punnett_canvas.show()
+            self.punnett_canvas.plot_punnett(
+                list(report["parent1"]), list(report["parent2"]), mode="classic"
+            )
 
         elif mode == "multigene":
             self.heatmap_canvas.show()
             result_dict = report.get("result_dict", {})
             if result_dict:
                 self.heatmap_canvas.plot_heatmap(result_dict)
+            self.punnett_canvas.show()
+            pairs = report.get("gene_pairs", [("Aa", "Aa")])
+            a1, a2 = list(pairs[0][0]), list(pairs[0][1])
+            self.punnett_canvas.plot_punnett(a1, a2, mode="multigene")
 
         elif mode == "sex":
             self.grouped_bar_canvas.show()
@@ -300,12 +314,20 @@ class MainWindow(QMainWindow):
                 report.get("daughter_stats", {}),
                 report.get("son_stats", {}),
             )
+            self.punnett_canvas.show()
+            mother = report.get("mother_X", "X^C X^c").split()
+            father = [report.get("father_X", "X^C"), "Y"]
+            self.punnett_canvas.plot_punnett(mother, father, mode="sex")
 
         elif mode == "multi_allele":
             self.pie_chart_canvas.show()
             self.pie_chart_canvas.plot_abo(
                 report.get("phenotype_counts", {}),
             )
+            self.punnett_canvas.show()
+            p1 = report.get("parent1_genotype", ["I^A", "i"])
+            p2 = report.get("parent2_genotype", ["I^B", "i"])
+            self.punnett_canvas.plot_punnett(p1, p2, mode="multi_allele")
 
         elif mode == "polygenic":
             self.histogram_canvas.show()

@@ -342,3 +342,59 @@ class HistogramCanvas(FigureCanvas):
         self.ax.legend(fontsize=9)
         self.fig.tight_layout()
         self.draw()
+
+
+class PunnettCanvas(FigureCanvas):
+    """Punnett 方格可视化 — 配子组合矩阵"""
+
+    def __init__(self, parent=None, width=4.5, height=4, dpi=CHART_DPI):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.ax = self.fig.add_subplot(111)
+        super().__init__(self.fig)
+        self.fig.set_tight_layout(True)
+        self.setParent(parent)
+
+    def plot_punnett(self, parent1_alleles, parent2_alleles, mode="classic"):
+        """绘制 Punnett 方格。parent1_alleles: 母本配子列表, parent2_alleles: 父本配子列表"""
+        self.ax.clear()
+        self.ax.axis('off')
+
+        rows = parent2_alleles  # 父本(行)
+        cols = parent1_alleles  # 母本(列)
+
+        cell_text = []
+        cell_colors = []
+        for r in rows:
+            row_text = []
+            row_color = []
+            for c in cols:
+                gt = r + c
+                if gt == 'aA':
+                    gt = 'Aa'  # 标准化
+                row_text.append(gt)
+                has_dom = any(ch.isupper() for ch in gt)
+                row_color.append(f'{COLOR_DOMINANT}44' if has_dom else f'{COLOR_RECESSIVE}44')
+            cell_text.append(row_text)
+            cell_colors.append(row_color)
+
+        row_labels = [f'♂ {a}' for a in rows]
+        col_labels = [f'♀ {a}' for a in cols]
+        table = self.ax.table(
+            cellText=cell_text, rowLabels=row_labels, colLabels=col_labels,
+            cellLoc='center', loc='center', cellColours=cell_colors
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(13)
+        table.scale(1, 1.6)
+
+        for key, cell in table.get_celld().items():
+            cell.set_edgecolor('#e2e8f0')
+            cell.set_linewidth(1)
+            if key[0] == 0 or key[1] == -1:
+                cell.set_facecolor('#f1f5f9')
+                cell.set_text_props(weight='bold', fontsize=11)
+
+        mode_names = {"classic": "经典遗传", "sex": "伴性遗传", "multi_allele": "复等位基因", "multigene": "多基因杂交"}
+        self.ax.set_title(f'Punnett 方格 ({mode_names.get(mode, mode)})',
+                         fontweight='bold', color=COLOR_TEXT_PRIMARY, pad=15, fontsize=13)
+        self.draw()
