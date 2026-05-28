@@ -2,7 +2,7 @@
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QTabWidget, QTextEdit, QStatusBar, QLabel, QSplitter
+    QTabWidget, QTextEdit, QStatusBar, QLabel, QSplitter, QStackedWidget
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
@@ -65,40 +65,63 @@ class MainWindow(QMainWindow):
 
         self.tab_widget = QTabWidget()
 
-        # Tab 1：实时统计图表
-        chart_tab = QWidget()
-        chart_layout = QVBoxLayout(chart_tab)
-        chart_layout.setSpacing(8)
+        # 图表区改用 QStackedWidget — 每个模式一页
+        self.chart_stack = QStackedWidget()
 
-        # 经典模式图表
+        # 经典模式页 (bar + convergence + punnett)
+        classic_page = QWidget()
+        classic_layout = QVBoxLayout(classic_page)
+        classic_layout.setSpacing(8)
         self.bar_chart = BarChartCanvas()
-        chart_layout.addWidget(self.bar_chart)
-
         self.convergence_chart = ConvergenceCanvas()
-        chart_layout.addWidget(self.convergence_chart)
-
-        # 新模式图表（预创建，初始隐藏）
-        self.heatmap_canvas = HeatmapCanvas()
-        self.heatmap_canvas.hide()
-        chart_layout.addWidget(self.heatmap_canvas)
-
-        self.grouped_bar_canvas = GroupedBarCanvas()
-        self.grouped_bar_canvas.hide()
-        chart_layout.addWidget(self.grouped_bar_canvas)
-
-        self.pie_chart_canvas = PieChartCanvas()
-        self.pie_chart_canvas.hide()
-        chart_layout.addWidget(self.pie_chart_canvas)
-
-        self.histogram_canvas = HistogramCanvas()
-        self.histogram_canvas.hide()
-        chart_layout.addWidget(self.histogram_canvas)
-
         self.punnett_canvas = PunnettCanvas()
-        self.punnett_canvas.hide()
-        chart_layout.addWidget(self.punnett_canvas)
+        classic_layout.addWidget(self.bar_chart)
+        classic_layout.addWidget(self.convergence_chart)
+        classic_layout.addWidget(self.punnett_canvas)
+        self.chart_stack.addWidget(classic_page)
 
-        self.tab_widget.addTab(chart_tab, "📊 实时图表")
+        # 多基因页 (heatmap + punnett)
+        multigene_page = QWidget()
+        multigene_layout = QVBoxLayout(multigene_page)
+        multigene_layout.setSpacing(8)
+        self.heatmap_canvas = HeatmapCanvas()
+        self.punnett_canvas2 = PunnettCanvas()
+        multigene_layout.addWidget(self.heatmap_canvas)
+        multigene_layout.addWidget(self.punnett_canvas2)
+        multigene_layout.addStretch()
+        self.chart_stack.addWidget(multigene_page)
+
+        # 性染色体页 (grouped_bar + punnett)
+        sex_page = QWidget()
+        sex_layout = QVBoxLayout(sex_page)
+        sex_layout.setSpacing(8)
+        self.grouped_bar_canvas = GroupedBarCanvas()
+        self.punnett_canvas3 = PunnettCanvas()
+        sex_layout.addWidget(self.grouped_bar_canvas)
+        sex_layout.addWidget(self.punnett_canvas3)
+        sex_layout.addStretch()
+        self.chart_stack.addWidget(sex_page)
+
+        # ABO页 (pie + punnett)
+        abo_page = QWidget()
+        abo_layout = QVBoxLayout(abo_page)
+        abo_layout.setSpacing(8)
+        self.pie_chart_canvas = PieChartCanvas()
+        self.punnett_canvas4 = PunnettCanvas()
+        abo_layout.addWidget(self.pie_chart_canvas)
+        abo_layout.addWidget(self.punnett_canvas4)
+        abo_layout.addStretch()
+        self.chart_stack.addWidget(abo_page)
+
+        # 数量性状页 (histogram)
+        polygenic_page = QWidget()
+        polygenic_layout = QVBoxLayout(polygenic_page)
+        self.histogram_canvas = HistogramCanvas()
+        polygenic_layout.addWidget(self.histogram_canvas)
+        polygenic_layout.addStretch()
+        self.chart_stack.addWidget(polygenic_page)
+
+        self.tab_widget.addTab(self.chart_stack, "📊 实时图表")
 
         # Tab 2：文本报告
         self.report_text = QTextEdit()
@@ -263,20 +286,12 @@ class MainWindow(QMainWindow):
         mode = report.get("mode", "classic")
         total = report["total_simulations"]
 
-        # ── 隐藏所有图表 ──
-        self.bar_chart.hide()
-        self.convergence_chart.hide()
-        self.heatmap_canvas.hide()
-        self.grouped_bar_canvas.hide()
-        self.pie_chart_canvas.hide()
-        self.histogram_canvas.hide()
-        self.punnett_canvas.hide()
+        mode_pages = {"classic": 0, "multigene": 1, "sex": 2, "multi_allele": 3, "polygenic": 4}
+        page_idx = mode_pages.get(mode, 0)
+        self.chart_stack.setCurrentIndex(page_idx)
 
-        # ── 根据模式显示对应图表 ──
+        # ── 根据模式绘制对应图表 ──
         if mode == "classic":
-            self.bar_chart.show()
-            self.convergence_chart.show()
-
             self.bar_chart.plot_results(
                 report["phenotype_counts"],
                 report["phenotype_ratios"],
@@ -293,44 +308,36 @@ class MainWindow(QMainWindow):
                 parent1=report["parent1"],
                 parent2=report["parent2"],
             )
-            self.punnett_canvas.show()
             self.punnett_canvas.plot_punnett(
                 list(report["parent1"]), list(report["parent2"]), mode="classic"
             )
 
         elif mode == "multigene":
-            self.heatmap_canvas.show()
             result_dict = report.get("result_dict", {})
             if result_dict:
                 self.heatmap_canvas.plot_heatmap(result_dict)
-            self.punnett_canvas.show()
             pairs = report.get("gene_pairs", [("Aa", "Aa")])
             a1, a2 = list(pairs[0][0]), list(pairs[0][1])
-            self.punnett_canvas.plot_punnett(a1, a2, mode="multigene")
+            self.punnett_canvas2.plot_punnett(a1, a2, mode="multigene")
 
         elif mode == "sex":
-            self.grouped_bar_canvas.show()
             self.grouped_bar_canvas.plot_sex_linked(
                 report.get("daughter_stats", {}),
                 report.get("son_stats", {}),
             )
-            self.punnett_canvas.show()
             mother = report.get("mother_X", "X^C X^c").split()
             father = [report.get("father_X", "X^C"), "Y"]
-            self.punnett_canvas.plot_punnett(mother, father, mode="sex")
+            self.punnett_canvas3.plot_punnett(mother, father, mode="sex")
 
         elif mode == "multi_allele":
-            self.pie_chart_canvas.show()
             self.pie_chart_canvas.plot_abo(
                 report.get("phenotype_counts", {}),
             )
-            self.punnett_canvas.show()
             p1 = report.get("parent1_genotype", ["I^A", "i"])
             p2 = report.get("parent2_genotype", ["I^B", "i"])
-            self.punnett_canvas.plot_punnett(p1, p2, mode="multi_allele")
+            self.punnett_canvas4.plot_punnett(p1, p2, mode="multi_allele")
 
         elif mode == "polygenic":
-            self.histogram_canvas.show()
             self.histogram_canvas.plot_histogram(
                 report.get("values", []),
                 report.get("fit_mean", 0),
