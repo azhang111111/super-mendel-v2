@@ -33,7 +33,6 @@ class BarChartCanvas(FigureCanvas):
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
-        self.setMaximumHeight(320)
         self.draw()
 
     def plot_results(self, phenotype_counts, phenotype_ratios,
@@ -111,7 +110,6 @@ class ConvergenceCanvas(FigureCanvas):
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
-        self.setMaximumHeight(320)
         self.draw()
 
     def plot_convergence(self, x_data, y_data, total_simulations,
@@ -189,7 +187,6 @@ class HeatmapCanvas(FigureCanvas):
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
-        self.setMaximumHeight(320)
         self._cbar = None
 
     def plot_heatmap(self, result_dict, gene_a_label="A", gene_b_label="B"):
