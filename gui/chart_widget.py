@@ -31,7 +31,7 @@ class BarChartCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
+        self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
         self.draw()
 
@@ -108,7 +108,7 @@ class ConvergenceCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
+        self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
         self.draw()
 
@@ -185,7 +185,7 @@ class HeatmapCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
+        self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
         self._cbar = None
 
@@ -243,7 +243,7 @@ class GroupedBarCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
+        self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
 
     def plot_sex_linked(self, daughter_stats, son_stats):
@@ -284,7 +284,7 @@ class PieChartCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
+        self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
 
     def plot_abo(self, phenotype_counts):
@@ -352,7 +352,7 @@ class PunnettCanvas(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
-        self.fig.set_tight_layout(True)
+        self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
         self.setParent(parent)
 
     def plot_punnett(self, parent1_alleles, parent2_alleles, mode="classic"):
