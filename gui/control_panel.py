@@ -407,7 +407,9 @@ class ControlPanel(QWidget):
         group_layout.setSpacing(10)
 
         count_row = QHBoxLayout()
-        count_row.addWidget(QLabel("基因数："))
+        label = QLabel("基因数：")
+        label.setFixedWidth(56)
+        count_row.addWidget(label)
         self.pg_gene_count = QComboBox()
         self.pg_gene_count.addItems(["2个基因", "3个基因", "4个基因"])
         self.pg_gene_count.setCurrentIndex(0)
@@ -417,7 +419,9 @@ class ControlPanel(QWidget):
         group_layout.addLayout(count_row)
 
         base_row = QHBoxLayout()
-        base_row.addWidget(QLabel("基准值："))
+        label2 = QLabel("基准值：")
+        label2.setFixedWidth(56)
+        base_row.addWidget(label2)
         self.pg_base = QComboBox()
         self.pg_base.setEditable(True)
         self.pg_base.addItems(["150.0", "160.0", "170.0", "180.0", "190.0"])
@@ -427,7 +431,9 @@ class ControlPanel(QWidget):
         group_layout.addLayout(base_row)
 
         noise_row = QHBoxLayout()
-        noise_row.addWidget(QLabel("噪声："))
+        label3 = QLabel("噪声：")
+        label3.setFixedWidth(56)
+        noise_row.addWidget(label3)
         self.pg_noise = QComboBox()
         self.pg_noise.setEditable(True)
         self.pg_noise.addItems(["1.0", "1.5", "2.0", "3.0", "5.0"])
