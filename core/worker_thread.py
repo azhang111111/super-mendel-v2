@@ -147,6 +147,31 @@ class SimulationWorker(QThread):
 
         pedigree_report = _build_pedigree_report(disease_name, inheritance, disease_params)
 
+        # 实际蒙特卡洛模拟（产生统计数据）
+        from core.crossover_engine import simulate_crossover_vectorized
+        if "X连锁" in inheritance:
+            mother_alleles = disease_params.get("mother_X", "X^H X^h").split()
+            father_allele = disease_params.get("father_X", "X^H")
+            from core.sex_chromosome import simulate_sex_chromosome_crossover
+            sim_result = simulate_sex_chromosome_crossover(mother_alleles, father_allele, 10000)
+            daughters = sim_result.get("女儿", {})
+            sons = sim_result.get("儿子", {})
+            sim_data = {
+                "女儿正常": sum(v for k,v in daughters.items() if not any(c.islower() for c in k.replace("X^",""))),
+                "女儿携带": sum(v for k,v in daughters.items() if any(c.islower() for c in k.replace("X^","")) and any(c.isupper() for c in k.replace("X^",""))),
+                "女儿患病": sum(v for k,v in daughters.items() if all(c.islower() for c in k.replace("X^",""))),
+                "儿子正常": sum(v for k,v in sons.items() if not any(c.islower() for c in k.replace("X^",""))),
+                "儿子患病": sum(v for k,v in sons.items() if any(c.islower() for c in k.replace("X^",""))),
+                "总模拟次数": sim_result.get("女儿数",0) + sim_result.get("儿子数",0),
+            }
+        else:
+            female_str = disease_params.get("female", "Aa")
+            male_str = disease_params.get("male", "Aa")
+            female = female_str.split() if " " in female_str else list(female_str)
+            male = male_str.split() if " " in male_str else list(male_str)
+            result, _, _ = simulate_crossover_vectorized(female, male, 10000)
+            sim_data = {"基因型分布": {k: int(v) for k,v in result.items()}, "总模拟次数": sum(result.values())}
+
         risk = disease_info.get("offspring_risk", {})
         self.progress_updated.emit(100, 100)
 
@@ -157,6 +182,7 @@ class SimulationWorker(QThread):
             "inheritance": inheritance,
             "offspring_risk": risk,
             "pedigree_report": pedigree_report,
+            "sim_data": sim_data,
         }
         self.simulation_finished.emit(report)
 

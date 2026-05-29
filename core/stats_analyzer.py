@@ -243,10 +243,10 @@ def generate_multimode_report(mode, engine_result, params, total_simulations):
     elif mode == "disease":
         report.update({
             "disease_name": engine_result.get("disease_name", ""),
-            "parent1": engine_result.get("parent1", ""),
-            "parent2": engine_result.get("parent2", ""),
+            "inheritance": engine_result.get("inheritance", ""),
             "offspring_risk": engine_result.get("offspring_risk", {}),
-            "pedigree": engine_result.get("pedigree", {}),
+            "pedigree_report": engine_result.get("pedigree_report", ""),
+            "sim_data": engine_result.get("sim_data", {}),
         })
     elif mode == "classic":
         from core.crossover_engine import calculate_convergence_curve

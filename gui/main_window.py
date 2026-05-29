@@ -132,14 +132,21 @@ class MainWindow(QMainWindow):
 
             def plot_disease_stats(self, report):
                 self.ax.clear()
-                risk = report.get("offspring_risk", {})
-                if not risk:
+                sim = report.get("sim_data", {})
+                if not sim:
                     self.ax.text(0.5, 0.5, "暂无统计数据", ha='center', va='center')
                     self.draw()
                     return
 
-                categories = list(risk.keys())
-                values = [v * 100 for v in risk.values()]
+                total = sim.get("总模拟次数", 1)
+                if "基因型分布" in sim:
+                    categories = list(sim["基因型分布"].keys())
+                    values = [v / total * 100 for v in sim["基因型分布"].values()]
+                else:
+                    keys = ["女儿正常","女儿携带","女儿患病","儿子正常","儿子患病"]
+                    categories = [k for k in keys if k in sim]
+                    values = [sim[k] / total * 100 for k in categories]
+
                 colors = [COLOR_RECESSIVE if '患病' in k else COLOR_DOMINANT if '正常' in k else COLOR_THEORY_LINE for k in categories]
 
                 bars = self.ax.bar(categories, values, color=colors, alpha=0.85, edgecolor='white', lw=1.2, width=0.5)
@@ -658,6 +665,24 @@ class MainWindow(QMainWindow):
         pedigree = report.get("pedigree_report", "")
         self.report_text.setFont(QFont("Consolas", 10))
         self.report_text.append(pedigree)
+
+        # 追加模拟数据
+        sim = report.get("sim_data", {})
+        if sim:
+            self.report_text.append("\n")
+            self.report_text.append("━" * 50)
+            self.report_text.append("  实际模拟数据 (10000次)")
+            self.report_text.append("━" * 50)
+            if "基因型分布" in sim:
+                for k, v in sim["基因型分布"].items():
+                    pct = v / sim["总模拟次数"] * 100
+                    self.report_text.append(f"  {k}: {v} ({pct:.1f}%)")
+            elif "女儿正常" in sim:
+                total = sim["总模拟次数"]
+                for key in ["女儿正常","女儿携带","女儿患病","儿子正常","儿子患病"]:
+                    if key in sim:
+                        pct = sim[key] / total * 100
+                        self.report_text.append(f"  {key}: {sim[key]} ({pct:.1f}%)")
 
     def closeEvent(self, event):
         """窗口关闭时确保工作线程终止"""
