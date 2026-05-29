@@ -1,0 +1,36 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:  # 手动触发
+  push:
+    tags:
+      - 'v*'         # 推送版本标签时自动触发
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyqt6 numpy matplotlib pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller -F -w --clean \
+            --name="超级孟德尔基因大数对决实验室v2" \
+            main.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mendel-Lab-macOS
+          path: dist/超级孟德尔基因大数对决实验室v2
