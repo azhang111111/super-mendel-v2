@@ -6,32 +6,29 @@ matplotlib.use('QtAgg')  # PyQt6 后端
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 from config import (
     COLOR_DOMINANT, COLOR_RECESSIVE, COLOR_THEORY_LINE,
     COLOR_TEXT_PRIMARY, CHART_DPI
 )
 
-# 设置 seaborn 风格
-sns.set_style("whitegrid")
-plt.rcParams['font.size'] = 10
-plt.rcParams['axes.titlesize'] = 14
-plt.rcParams['axes.labelsize'] = 11
-
-# 设置中文字体支持
+# 中文字体支持（需在创建 Figure 前设置）
 plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'Arial Unicode MS']
-plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+plt.rcParams['axes.unicode_minus'] = False
 
 
 class BarChartCanvas(FigureCanvas):
     """表现型柱状图 + 理论参考线"""
 
-    def __init__(self, parent=None, width=6, height=4, dpi=CHART_DPI):
+    def __init__(self, parent=None, width=3.8, height=2.2, dpi=CHART_DPI):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
+        # 独立样式 (不依赖全局 plt.rcParams)
+        self.ax.tick_params(labelsize=9)
+        self.ax.xaxis.label.set_size(10)
+        self.ax.yaxis.label.set_size(10)
         self.setParent(parent)
         self.draw()
 
@@ -82,9 +79,9 @@ class BarChartCanvas(FigureCanvas):
 
         self.ax.set_ylim(0, max(100, max(theory_pcts) + 15))
         self.ax.set_ylabel('占比 (%)')
-        self.ax.set_title(f'表现型分布 vs 孟德尔理论值\n({parent1} × {parent2})',
+        self.ax.set_title(f'表现型分布 vs 孟德尔理论值 ({parent1} × {parent2})',
                           fontweight='bold', color=COLOR_TEXT_PRIMARY,
-                          pad=15)
+                          fontsize=9, pad=8)
 
         # 图例
         from matplotlib.patches import Patch
@@ -104,11 +101,15 @@ class BarChartCanvas(FigureCanvas):
 class ConvergenceCanvas(FigureCanvas):
     """大数定律收敛折线图"""
 
-    def __init__(self, parent=None, width=6, height=4, dpi=CHART_DPI):
+    def __init__(self, parent=None, width=3.8, height=2.2, dpi=CHART_DPI):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
+        # 独立样式 (不依赖全局 plt.rcParams)
+        self.ax.tick_params(labelsize=9)
+        self.ax.xaxis.label.set_size(10)
+        self.ax.yaxis.label.set_size(10)
         self.setParent(parent)
         self.draw()
 
@@ -145,7 +146,7 @@ class ConvergenceCanvas(FigureCanvas):
             f'大数定律：显性比例收敛过程 '
             f'(n={total_simulations:,}) '
             f'({parent1} × {parent2})',
-            fontweight='bold', color=COLOR_TEXT_PRIMARY, pad=15
+            fontweight='bold', color=COLOR_TEXT_PRIMARY, fontsize=9, pad=8
         )
 
         y_min = max(0, theory_ratio - 0.55)
@@ -181,11 +182,15 @@ import numpy as np
 class HeatmapCanvas(FigureCanvas):
     """二因子基因型分布热力图"""
 
-    def __init__(self, parent=None, width=6, height=5, dpi=CHART_DPI):
+    def __init__(self, parent=None, width=8, height=6, dpi=CHART_DPI):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
+        # 独立样式 (不依赖全局 plt.rcParams)
+        self.ax.tick_params(labelsize=9)
+        self.ax.xaxis.label.set_size(10)
+        self.ax.yaxis.label.set_size(10)
         self.setParent(parent)
         self._cbar = None
 
@@ -239,11 +244,15 @@ class HeatmapCanvas(FigureCanvas):
 class GroupedBarCanvas(FigureCanvas):
     """性染色体按性别分组柱状图"""
 
-    def __init__(self, parent=None, width=6, height=4, dpi=CHART_DPI):
+    def __init__(self, parent=None, width=8, height=6, dpi=CHART_DPI):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
+        # 独立样式 (不依赖全局 plt.rcParams)
+        self.ax.tick_params(labelsize=9)
+        self.ax.xaxis.label.set_size(10)
+        self.ax.yaxis.label.set_size(10)
         self.setParent(parent)
 
     def plot_sex_linked(self, daughter_stats, son_stats):
@@ -280,11 +289,15 @@ class GroupedBarCanvas(FigureCanvas):
 class PieChartCanvas(FigureCanvas):
     """ABO 血型四分类饼图"""
 
-    def __init__(self, parent=None, width=5, height=4, dpi=CHART_DPI):
+    def __init__(self, parent=None, width=7, height=6, dpi=CHART_DPI):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
+        # 独立样式 (不依赖全局 plt.rcParams)
+        self.ax.tick_params(labelsize=9)
+        self.ax.xaxis.label.set_size(10)
+        self.ax.yaxis.label.set_size(10)
         self.setParent(parent)
 
     def plot_abo(self, phenotype_counts):
@@ -308,18 +321,21 @@ class PieChartCanvas(FigureCanvas):
                        bbox_to_anchor=(0.5, -0.15), ncol=min(len(labels), 2),
                        fontsize=9, framealpha=0.8)
         self.ax.set_title('ABO 血型分布', fontweight='bold', color=COLOR_TEXT_PRIMARY)
-        self.fig.subplots_adjust(bottom=0.2)
         self.draw()
 
 
 class HistogramCanvas(FigureCanvas):
     """多基因性状直方图 + 正态拟合曲线 (纯 NumPy)"""
 
-    def __init__(self, parent=None, width=6, height=4, dpi=CHART_DPI):
+    def __init__(self, parent=None, width=8, height=6, dpi=CHART_DPI):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
+        # 独立样式 (不依赖全局 plt.rcParams)
+        self.ax.tick_params(labelsize=9)
+        self.ax.xaxis.label.set_size(10)
+        self.ax.yaxis.label.set_size(10)
         self.setParent(parent)
 
     def plot_histogram(self, values, mu, sigma):
@@ -353,6 +369,10 @@ class PunnettCanvas(FigureCanvas):
         self.ax = self.fig.add_subplot(111)
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.12, right=0.95, top=0.9, bottom=0.15)
+        # 独立样式 (不依赖全局 plt.rcParams)
+        self.ax.tick_params(labelsize=9)
+        self.ax.xaxis.label.set_size(10)
+        self.ax.yaxis.label.set_size(10)
         self.setParent(parent)
 
     def plot_punnett(self, parent1_alleles, parent2_alleles, mode="classic"):
@@ -397,5 +417,5 @@ class PunnettCanvas(FigureCanvas):
 
         mode_names = {"classic": "经典遗传", "sex": "伴性遗传", "multi_allele": "复等位基因", "multigene": "多基因杂交"}
         self.ax.set_title(f'Punnett 方格 ({mode_names.get(mode, mode)})',
-                         fontweight='bold', color=COLOR_TEXT_PRIMARY, pad=15, fontsize=13)
+                         fontweight='bold', color=COLOR_TEXT_PRIMARY, fontsize=11, pad=8)
         self.draw()
