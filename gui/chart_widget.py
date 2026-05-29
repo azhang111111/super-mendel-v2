@@ -419,3 +419,60 @@ class PunnettCanvas(FigureCanvas):
         self.ax.set_title(f'Punnett 方格 ({mode_names.get(mode, mode)})',
                          fontweight='bold', color=COLOR_TEXT_PRIMARY, fontsize=11, pad=8)
         self.draw()
+
+class DiseasePunnettCanvas(FigureCanvas):
+    """疾病模拟Punnett方格"""
+
+    def __init__(self, parent=None, width=4.5, height=3.2, dpi=CHART_DPI):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.ax = self.fig.add_subplot(111)
+        super().__init__(self.fig)
+        self.fig.subplots_adjust(left=0.22, right=0.92, top=0.85, bottom=0.15)
+        self.setParent(parent)
+
+    def plot_disease_punnett(self, report):
+        self.ax.clear()
+        self.ax.axis('off')
+        disease_name = report.get('disease_name', '')
+        inheritance = report.get('inheritance', '')
+        risk = report.get('offspring_risk', {})
+
+        title = f'Punnett 方格 - {disease_name} ({inheritance})'
+        self.ax.set_title(title, fontweight='bold', fontsize=10, color=COLOR_TEXT_PRIMARY, pad=8)
+
+        if 'X连锁' in inheritance:
+            col_labels = ['male X^H', 'male Y']
+            row_labels = ['female X^H', 'female X^h']
+        else:
+            col_labels = ['male A', 'male a']
+            row_labels = ['female A', 'female a']
+
+        if 'X连锁隐性' in inheritance:
+            cell_data = [['X^H X^H normal', 'X^H Y normal'], ['X^H X^h carrier', 'X^h Y affected']]
+            cell_colors = [['#3b82f644', '#3b82f644'], ['#f43f5e44', '#f43f5ecc']]
+        elif '常染色体隐性' in inheritance:
+            cell_data = [['AA normal', 'Aa carrier'], ['Aa carrier', 'aa affected']]
+            cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
+        elif '常染色体显性' in inheritance:
+            cell_data = [['Hh affected', 'Hh affected'], ['hh normal', 'hh normal']]
+            cell_colors = [['#f43f5ecc', '#f43f5ecc'], ['#3b82f644', '#3b82f644']]
+        elif '常染色体共显性' in inheritance:
+            cell_data = [['AA normal', 'Aa mild'], ['Aa mild', 'aa affected']]
+            cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
+        else:
+            cell_data = [['AA normal', 'Aa carrier'], ['Aa carrier', 'aa affected']]
+            cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
+
+        table = self.ax.table(
+            cellText=cell_data, rowLabels=row_labels, colLabels=col_labels,
+            cellLoc='center', loc='upper center', cellColours=cell_colors
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1.2, 1.5)
+
+        risk_text = 'risk: ' + '  '.join(f'{k}:{v*100:.0f}%' for k, v in risk.items())
+        self.ax.text(0.5, 0.05, risk_text, transform=self.ax.transAxes,
+                     ha='center', fontsize=10, fontweight='bold', color=COLOR_TEXT_PRIMARY,
+                     bbox=dict(boxstyle='round,pad=0.5', facecolor='#f1f5f9', alpha=0.8))
+        self.draw()

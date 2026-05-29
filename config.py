@@ -175,6 +175,7 @@ GENETIC_MODES = {
     "sex": "性染色体遗传 (X 连锁)",
     "multi_allele": "复等位基因 (ABO 血型)",
     "polygenic": "多基因数量性状",
+    "disease": "疾病模拟",
 }
 
 # ── ABO 血型系统 ──
@@ -204,4 +205,83 @@ MODE_DESCRIPTIONS = {
     "sex": "X 连锁遗传模拟。母亲选两条 X 等位基因组合，父亲选 X 等位基因。儿子为半合子(仅一条 X)，性状完全由母亲决定。典型案例：红绿色盲/血友病。",
     "multi_allele": "ABO 血型遗传系统。I^A 和 I^B 共显性，i 隐性。6 种基因型→4 种表现型(A/B/AB/O)。支持所有血型亲本组合。",
     "polygenic": "多基因数量性状模拟。多个基因独立杂交，每个基因对性状产生加性效应，总体呈正态分布。演示数量遗传学核心概念——中心极限定理。可调节基因数/基准值/噪声。",
+    "disease": "经典遗传病场景库 + 三代家系分析。选择10种常见遗传病之一，加载预设参数后进行家系模拟，推算子代/孙代患病概率。",
+}
+
+# ══════════════════════════════════════════════
+# v3.0 疾病模拟
+# ══════════════════════════════════════════════
+
+# 疾病场景库
+DISEASE_LIBRARY = {
+    "红绿色盲": {
+        "mode": "sex",
+        "inheritance": "X连锁隐性",
+        "description": "最常见的色觉障碍，男性发病率约8%。母亲为携带者时，儿子有50%概率患病。",
+        "params": {"mother_X": "X^C X^c", "father_X": "X^C"},
+        "offspring_risk": {"儿子患病率": 0.50, "女儿携带率": 0.50, "女儿患病率": 0.00}
+    },
+    "血友病A": {
+        "mode": "sex",
+        "inheritance": "X连锁隐性",
+        "description": "凝血因子VIII缺乏，著名王室遗传病。男性发病率约1/5000。",
+        "params": {"mother_X": "X^H X^h", "father_X": "X^H"},
+        "offspring_risk": {"儿子患病率": 0.50, "女儿携带率": 0.50, "女儿患病率": 0.00}
+    },
+    "杜氏肌营养不良": {
+        "mode": "sex",
+        "inheritance": "X连锁隐性",
+        "description": "进行性肌肉萎缩，男性发病率约1/3500。通常3-5岁发病。",
+        "params": {"mother_X": "X^D X^d", "father_X": "X^D"},
+        "offspring_risk": {"儿子患病率": 0.50, "女儿携带率": 0.50, "女儿患病率": 0.00}
+    },
+    "白化病": {
+        "mode": "classic",
+        "inheritance": "常染色体隐性",
+        "description": "黑色素合成障碍，发病率约1/17000。父母均为携带者时子女患病率25%。",
+        "params": {"female": "Aa", "male": "Aa"},
+        "offspring_risk": {"患病率": 0.25, "携带率": 0.50, "正常率": 0.25}
+    },
+    "苯丙酮尿症": {
+        "mode": "classic",
+        "inheritance": "常染色体隐性",
+        "description": "PKU，苯丙氨酸代谢障碍。中国发病率约1/11000。新生儿筛查必查项目。",
+        "params": {"female": "Pp", "male": "Pp"},
+        "offspring_risk": {"患病率": 0.25, "携带率": 0.50, "正常率": 0.25}
+    },
+    "囊性纤维化": {
+        "mode": "classic",
+        "inheritance": "常染色体隐性",
+        "description": "CFTR基因突变导致黏液分泌异常。白种人发病率约1/2500。",
+        "params": {"female": "Ff", "male": "Ff"},
+        "offspring_risk": {"患病率": 0.25, "携带率": 0.50, "正常率": 0.25}
+    },
+    "亨廷顿舞蹈症": {
+        "mode": "classic",
+        "inheritance": "常染色体显性",
+        "description": "HTT基因CAG重复扩增，中年发病。子女有50%概率遗传致病基因。",
+        "params": {"female": "hh", "male": "Hh"},
+        "offspring_risk": {"患病率": 0.50, "正常率": 0.50}
+    },
+    "马凡综合征": {
+        "mode": "classic",
+        "inheritance": "常染色体显性",
+        "description": "FBN1基因突变，影响结缔组织。发病率约1/5000。",
+        "params": {"female": "mm", "male": "Mm"},
+        "offspring_risk": {"患病率": 0.50, "正常率": 0.50}
+    },
+    "家族性高胆固醇血症": {
+        "mode": "classic",
+        "inheritance": "常染色体显性",
+        "description": "LDLR基因突变，杂合子发病率约1/250。早发心血管病风险显著升高。",
+        "params": {"female": "ff", "male": "Ff"},
+        "offspring_risk": {"患病率": 0.50, "正常率": 0.50}
+    },
+    "镰刀型贫血": {
+        "mode": "classic",
+        "inheritance": "常染色体共显性",
+        "description": "HBB基因突变，杂合子有疟疾抗性。非洲裔发病率约1/500。",
+        "params": {"female": "HbA HbS", "male": "HbA HbS"},
+        "offspring_risk": {"患病率": 0.25, "携带率": 0.50, "正常率": 0.25}
+    },
 }

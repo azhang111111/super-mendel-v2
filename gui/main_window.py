@@ -7,16 +7,21 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
 from config import (
     COLOR_BG_MAIN, COLOR_BG_PANEL, COLOR_TEXT_PRIMARY,
     COLOR_TEXT_SECONDARY, COLOR_DOMINANT, COLOR_THEORY_LINE,
+    COLOR_RECESSIVE,
     MODE_DESCRIPTIONS,
 )
 from gui.mode_selector import ModeSelector
 from gui.control_panel import ControlPanel
 from gui.chart_widget import (
     BarChartCanvas, ConvergenceCanvas,
-    HeatmapCanvas, GroupedBarCanvas, PieChartCanvas, HistogramCanvas
+    HeatmapCanvas, GroupedBarCanvas, PieChartCanvas, HistogramCanvas,
+    DiseasePunnettCanvas,
 )
 from core.worker_thread import SimulationWorker
 
@@ -111,6 +116,47 @@ class MainWindow(QMainWindow):
         polygenic_layout.addStretch()
         polygenic_layout.addWidget(self.histogram_canvas)
         self.chart_stack.addWidget(polygenic_page)
+
+        # 疾病页 (Punnett + stats)
+        disease_page = QWidget()
+        disease_layout = QVBoxLayout(disease_page)
+        disease_layout.setSpacing(8)
+
+        class StatsCanvas(FigureCanvas):
+            def __init__(self, parent=None, width=7, height=3, dpi=100):
+                self.fig = Figure(figsize=(width, height), dpi=dpi)
+                self.ax = self.fig.add_subplot(111)
+                super().__init__(self.fig)
+                self.fig.subplots_adjust(left=0.12, right=0.95, top=0.85, bottom=0.2)
+                self.setParent(parent)
+
+            def plot_disease_stats(self, report):
+                self.ax.clear()
+                risk = report.get("offspring_risk", {})
+                if not risk:
+                    self.ax.text(0.5, 0.5, "暂无统计数据", ha='center', va='center')
+                    self.draw()
+                    return
+
+                categories = list(risk.keys())
+                values = [v * 100 for v in risk.values()]
+                colors = [COLOR_RECESSIVE if '患病' in k else COLOR_DOMINANT if '正常' in k else COLOR_THEORY_LINE for k in categories]
+
+                bars = self.ax.bar(categories, values, color=colors, alpha=0.85, edgecolor='white', lw=1.2, width=0.5)
+                for bar, val in zip(bars, values):
+                    self.ax.text(bar.get_x()+bar.get_width()/2, bar.get_height()+1, f'{val:.1f}%', ha='center', fontsize=10, fontweight='bold')
+                self.ax.set_ylabel('百分比 (%)')
+                self.ax.set_ylim(0, max(values) + 15)
+                self.ax.set_title(f'子代风险分析 — {report.get("disease_name","")}', fontweight='bold', fontsize=11, color=COLOR_TEXT_PRIMARY, pad=10)
+                self.draw()
+
+        self.disease_punnett_canvas = DiseasePunnettCanvas(width=4.5, height=4)
+        disease_layout.addWidget(self.disease_punnett_canvas)
+
+        self.disease_stats_canvas = StatsCanvas()
+        disease_layout.addWidget(self.disease_stats_canvas)
+        disease_layout.addStretch()
+        self.chart_stack.addWidget(disease_page)
 
         self.tab_widget.addTab(self.chart_stack, "📊 实时图表")
 
@@ -237,6 +283,12 @@ class MainWindow(QMainWindow):
             worker_params["noise_std"] = params["noise"]
             worker_params["effects"] = None
             status_info = f"数量性状 ({gene_n} 基因)"
+        elif mode == "disease":
+            disease_name = self.control_panel.disease_combo.currentText()
+            worker_params["disease_name"] = disease_name
+            worker_params["parent1"] = params.get("female", "Aa")
+            worker_params["parent2"] = params.get("male", "Aa")
+            status_info = f"疾病模拟 ({disease_name})"
 
         # 设置运行状态
         self.control_panel.set_running_state(True)
@@ -277,7 +329,7 @@ class MainWindow(QMainWindow):
         mode = report.get("mode", "classic")
         total = report["total_simulations"]
 
-        mode_pages = {"classic": 0, "multigene": 1, "sex": 2, "multi_allele": 3, "polygenic": 4}
+        mode_pages = {"classic": 0, "multigene": 1, "sex": 2, "multi_allele": 3, "polygenic": 4, "disease": 5}
         page_idx = mode_pages.get(mode, 0)
         self.chart_stack.setCurrentIndex(page_idx)
 
@@ -328,6 +380,10 @@ class MainWindow(QMainWindow):
                 report.get("fit_mean", 0),
                 report.get("fit_std", 1),
             )
+
+        elif mode == "disease":
+            self.disease_punnett_canvas.plot_disease_punnett(report)
+            self.disease_stats_canvas.plot_disease_stats(report)
 
         # ── 生成文本报告 ──
         self._generate_text_report(report)
@@ -397,6 +453,8 @@ class MainWindow(QMainWindow):
             self._generate_abo_report(report)
         elif mode == "polygenic":
             self._generate_polygenic_report(report)
+        elif mode == "disease":
+            self._generate_disease_report(report)
         else:
             self._generate_classic_report(report)
 
@@ -594,6 +652,12 @@ class MainWindow(QMainWindow):
 
         self.report_text.clear()
         self.report_text.append('\n'.join(lines))
+
+    def _generate_disease_report(self, report):
+        self.report_text.clear()
+        pedigree = report.get("pedigree_report", "")
+        self.report_text.setFont(QFont("Consolas", 10))
+        self.report_text.append(pedigree)
 
     def closeEvent(self, event):
         """窗口关闭时确保工作线程终止"""

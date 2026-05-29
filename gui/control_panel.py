@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QProgressBar, QHBoxLayout, QStackedWidget,
     QDoubleSpinBox, QLineEdit, QScrollArea, QFrame
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from config import (
     GENOTYPE_OPTIONS, SIMULATION_PRESETS,
     COLOR_DOMINANT, COLOR_RECESSIVE, COLOR_ACCENT,
@@ -16,6 +16,8 @@ from config import (
 
 class ControlPanel(QWidget):
     """左侧控制面板"""
+
+    mode_switch_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -49,6 +51,9 @@ class ControlPanel(QWidget):
 
         # Page 4: 多基因数量性状
         self.stacked.addWidget(self._create_polygenic_page())
+
+        # Page 5: 疾病模拟
+        self.stacked.addWidget(self._create_disease_page())
 
         layout.addWidget(self.stacked)
 
@@ -458,6 +463,75 @@ class ControlPanel(QWidget):
         self._input_widgets.extend([self.pg_gene_count, self.pg_base, self.pg_noise])
         return page
 
+    def _create_disease_page(self):
+        from config import DISEASE_LIBRARY
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        group = QGroupBox("经典遗传病场景库")
+        group_layout = QVBoxLayout(group)
+        group_layout.setSpacing(8)
+
+        # 疾病选择
+        select_row = QHBoxLayout()
+        select_row.addWidget(QLabel("选择疾病:"))
+        self.disease_combo = QComboBox()
+        disease_names = list(DISEASE_LIBRARY.keys())
+        self.disease_combo.addItems(disease_names)
+        self.disease_combo.currentTextChanged.connect(self._on_disease_selected)
+        select_row.addWidget(self.disease_combo)
+        group_layout.addLayout(select_row)
+
+        # 疾病信息
+        self.disease_info_label = QLabel("")
+        self.disease_info_label.setWordWrap(True)
+        self.disease_info_label.setStyleSheet("color:#64748b; font-size:11px; padding:4px;")
+        group_layout.addWidget(self.disease_info_label)
+
+        # 预设风险
+        self.disease_risk_label = QLabel("")
+        self.disease_risk_label.setStyleSheet("color:#1e293b; font-size:11px; font-weight:bold;")
+        group_layout.addWidget(self.disease_risk_label)
+
+        layout.addWidget(group)
+        layout.addStretch()
+
+        # 初始化显示第一个疾病
+        self._on_disease_selected(disease_names[0])
+        return page
+
+    def _on_disease_selected(self, name):
+        """疾病选择时更新信息"""
+        from config import DISEASE_LIBRARY
+        disease = DISEASE_LIBRARY.get(name, {})
+        desc = f"遗传方式: {disease.get('inheritance', '')}\n{disease.get('description', '')}"
+        self.disease_info_label.setText(desc)
+        risk = disease.get('offspring_risk', {})
+        risk_text = "子代风险: " + ", ".join(f"{k}:{v*100:.0f}%" for k, v in risk.items())
+        self.disease_risk_label.setText(risk_text)
+
+    def _apply_disease(self):
+        """加载疾病场景 — 切换到对应遗传模式并填入参数"""
+        from config import DISEASE_LIBRARY
+        name = self.disease_combo.currentText()
+        disease = DISEASE_LIBRARY.get(name, {})
+        mode = disease.get("mode")
+        if mode is None:
+            return
+        params = disease.get("params", {})
+        # 保持 disease 模式不变，只填入参数
+        if mode == "sex":
+            if "mother_X" in params:
+                self.sex_mother_combo.setCurrentText(params["mother_X"])
+            if "father_X" in params:
+                self.sex_father_combo.setCurrentText(params["father_X"])
+        elif mode == "classic":
+            if "female" in params:
+                self.female_combo.setCurrentText(params["female"])
+            if "male" in params:
+                self.male_combo.setCurrentText(params["male"])
+
     # ── 模式切换 ──
 
     def switch_mode(self, mode):
@@ -471,6 +545,7 @@ class ControlPanel(QWidget):
             "sex": 2,
             "multi_allele": 3,
             "polygenic": 4,
+            "disease": 5,
         }
         idx = index_map.get(mode, 0)
         self.stacked.setCurrentIndex(idx)
@@ -499,6 +574,10 @@ class ControlPanel(QWidget):
             params["gene_count"] = self.pg_gene_count.currentIndex() + 2
             params["base_value"] = float(self.pg_base.currentText())
             params["noise"] = float(self.pg_noise.currentText())
+        elif self.current_mode == "disease":
+            params["female"], params["male"] = self.get_parents()
+            params["mother_x"] = self.sex_mother_combo.currentText()
+            params["father_x"] = self.sex_father_combo.currentText()
         return params
 
     # ── 公开 API（保持向后兼容）──

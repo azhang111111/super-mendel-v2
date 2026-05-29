@@ -240,6 +240,14 @@ def generate_multimode_report(mode, engine_result, params, total_simulations):
             engine_result,
             params.get("expected_mean"),
         ))
+    elif mode == "disease":
+        report.update({
+            "disease_name": engine_result.get("disease_name", ""),
+            "parent1": engine_result.get("parent1", ""),
+            "parent2": engine_result.get("parent2", ""),
+            "offspring_risk": engine_result.get("offspring_risk", {}),
+            "pedigree": engine_result.get("pedigree", {}),
+        })
     elif mode == "classic":
         from core.crossover_engine import calculate_convergence_curve
         if isinstance(engine_result, tuple) and len(engine_result) == 3:

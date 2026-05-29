@@ -43,6 +43,7 @@ class SimulationWorker(QThread):
                 "sex": self._run_sex,
                 "multi_allele": self._run_multi_allele,
                 "polygenic": self._run_polygenic,
+                "disease": self._run_disease,
             }
             handler = dispatchers.get(self.mode, self._run_classic)
             handler()
@@ -135,6 +136,30 @@ class SimulationWorker(QThread):
         report = generate_multimode_report("multi_allele", result, self.params, N)
         self.simulation_finished.emit(report)
 
+    def _run_disease(self):
+        """疾病模拟模式 — 根据DISEASE_LIBRARY用Punnett方格生成确定性家系报告"""
+        from config import DISEASE_LIBRARY
+        params = self.params
+        disease_name = params.get("disease_name", "")
+        disease_info = DISEASE_LIBRARY.get(disease_name, {})
+        inheritance = disease_info.get("inheritance", "")
+        disease_params = disease_info.get("params", {})
+
+        pedigree_report = _build_pedigree_report(disease_name, inheritance, disease_params)
+
+        risk = disease_info.get("offspring_risk", {})
+        self.progress_updated.emit(100, 100)
+
+        report = {
+            "mode": "disease",
+            "total_simulations": 1,
+            "disease_name": disease_name,
+            "inheritance": inheritance,
+            "offspring_risk": risk,
+            "pedigree_report": pedigree_report,
+        }
+        self.simulation_finished.emit(report)
+
     def _run_polygenic(self):
         """多基因数量性状模式"""
         from core.polygenic import simulate_polygenic_trait
@@ -153,3 +178,127 @@ class SimulationWorker(QThread):
         self.progress_updated.emit(N, N)
         report = generate_multimode_report("polygenic", values, self.params, N)
         self.simulation_finished.emit(report)
+
+
+# ══════════════════════════════════════════════════════════════
+# 疾病家系分析 — Punnett 方格确定性报告 (替代随机模拟)
+# ══════════════════════════════════════════════════════════════
+
+def _build_pedigree_report(disease_name, inheritance, params):
+    """根据疾病类型构建确定性的家系文字报告"""
+    lines = []
+    lines.append(f"遗传病: {disease_name}")
+    lines.append(f"遗传方式: {inheritance}")
+    lines.append("")
+
+    if "X连锁隐性" in inheritance:
+        mother = params.get("mother_X", "X^H X^h")
+        father = params.get("father_X", "X^H")
+        lines.append(_x_linked_recessive_report(mother, father))
+    elif "X连锁显性" in inheritance:
+        mother = params.get("mother_X", "X^H X^h")
+        father = params.get("father_X", "X^H")
+        lines.append(_x_linked_dominant_report(mother, father))
+    elif "常染色体隐性" in inheritance:
+        female = params.get("female", "Aa")
+        male = params.get("male", "Aa")
+        lines.append(_autosomal_recessive_report(female, male))
+    elif "常染色体显性" in inheritance:
+        female = params.get("female", "hh")
+        male = params.get("male", "Hh")
+        lines.append(_autosomal_dominant_report(female, male))
+    elif "常染色体共显性" in inheritance:
+        female = params.get("female", "HbA HbS")
+        male = params.get("male", "HbA HbS")
+        lines.append(_autosomal_codominant_report(female, male))
+
+    return "\n".join(lines)
+
+
+def _x_linked_recessive_report(mother, father):
+    """X连锁隐性遗传家系报告 (如: 母亲携带者 X^H X^h × 父亲正常 X^H Y)"""
+    mother_alleles = mother.split()  # ["X^H", "X^h"]
+    return f"""┌─────────────────────────────────────────────────────┐
+│  Punnett 方格推算 (X连锁隐性)                        │
+│  母本配子: {mother_alleles[0]}  /  {mother_alleles[1]}                     │
+│  父本配子: {father}  /  Y                           │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  Ⅰ代:  正常男性（□，{father} Y） —— 女性携带者（◐，{mother}） │
+│                  ↓                                  │
+│  Ⅱ代:  儿子50% 正常（□，{mother_alleles[0]} Y）          │
+│         儿子50% 患病（■，{mother_alleles[1]} Y）                │
+│         女儿50% 正常（○，{mother_alleles[0]} {mother_alleles[0]}）        │
+│         女儿50% 携带（◐，{mother_alleles[0]} {mother_alleles[1]}）   │
+│                  ↓（患病儿子与正常女性结婚）           │
+│  Ⅲ代:  女儿100% 携带（◐，{mother_alleles[0]} {mother_alleles[1]}）   │
+│         儿子100% 正常（□，{mother_alleles[0]} Y）         │
+│                                                     │
+└─────────────────────────────────────────────────────┘"""
+
+
+def _x_linked_dominant_report(mother, father):
+    """X连锁显性遗传家系报告"""
+    mother_alleles = mother.split()
+    return f"""┌─────────────────────────────────────────────────────┐
+│  Punnett 方格推算 (X连锁显性)                        │
+│  母本配子: {mother_alleles[0]}  /  {mother_alleles[1]}                     │
+│  父本配子: {father}  /  Y                           │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  Ⅰ代:  患病男性（■，{father} Y） —— 正常女性（○，{mother}）  │
+│                  ↓                                  │
+│  Ⅱ代:  儿子100% 正常（□，{mother_alleles[0]} Y）         │
+│         女儿100% 患病（●，{mother_alleles[0]} {father}）  │
+│                  ↓（患病女儿与正常男性结婚）           │
+│  Ⅲ代:  子女50% 患病，50% 正常                       │
+│                                                     │
+└─────────────────────────────────────────────────────┘"""
+
+
+def _autosomal_recessive_report(female, male):
+    """常染色体隐性遗传家系报告 (如白化病 Aa × Aa)"""
+    return f"""┌─────────────────────────────────────────────────────┐
+│  Punnett 方格推算 (常染色体隐性)                      │
+│  亲本: {female} × {male}                                        │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  Ⅰ代:  携带者男性（◐，{male}） —— 携带者女性（◐，{female}） │
+│                  ↓                                  │
+│  Ⅱ代:  子女25% 正常（□/○，AA）                      │
+│         子女50% 携带（◐，Aa）                        │
+│         子女25% 患病（■/●，aa）                      │
+│                  ↓                                  │
+│  Ⅲ代:  取决于Ⅱ代配偶的基因型                         │
+│        （如与正常纯合子结婚，子女均为携带者）          │
+│                                                     │
+└─────────────────────────────────────────────────────┘"""
+
+
+def _autosomal_dominant_report(female, male):
+    """常染色体显性遗传家系报告 (如亨廷顿舞蹈症 hh × Hh)"""
+    return f"""┌─────────────────────────────────────────────────────┐
+│  Punnett 方格推算 (常染色体显性)                      │
+│  亲本: {female} × {male}                                        │
+├─────────────────────────────────────────────────────┤
+│  Ⅰ代:  患病男性（■，{male}） —— 正常女性（○，{female}）   │
+│                  ↓                                  │
+│  Ⅱ代:  子女50% 患病（■/●，Hh）                      │
+│         子女50% 正常（□/○，hh）                      │
+│                                                     │
+└─────────────────────────────────────────────────────┘"""
+
+
+def _autosomal_codominant_report(female, male):
+    """常染色体共显性遗传家系报告 (如镰刀型贫血 HbA HbS × HbA HbS)"""
+    return f"""┌─────────────────────────────────────────────────────┐
+│  Punnett 方格推算 (常染色体共显性)                    │
+│  亲本: {female} × {male}                                        │
+├─────────────────────────────────────────────────────┤
+│  Ⅰ代:  携带者男性（◐，{male}） —— 携带者女性（◐，{female}） │
+│                  ↓                                  │
+│  Ⅱ代:  子女25% 正常（□/○，AA）                      │
+│         子女50% 携带/轻症（◐，Aa）                   │
+│         子女25% 患病（■/●，aa）                      │
+│                                                     │
+└─────────────────────────────────────────────────────┘"""
