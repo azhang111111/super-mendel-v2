@@ -4,7 +4,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QGroupBox, QLabel,
     QComboBox, QSpinBox, QSlider, QPushButton,
     QProgressBar, QHBoxLayout, QStackedWidget,
-    QDoubleSpinBox, QLineEdit, QScrollArea, QFrame
+    QDoubleSpinBox, QLineEdit, QScrollArea, QFrame,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from config import (
@@ -489,10 +490,73 @@ class ControlPanel(QWidget):
         self.disease_info_label.setStyleSheet("color:#64748b; font-size:11px; padding:4px;")
         group_layout.addWidget(self.disease_info_label)
 
-        # 预设风险
-        self.disease_risk_label = QLabel("")
-        self.disease_risk_label.setStyleSheet("color:#1e293b; font-size:11px; font-weight:bold;")
-        group_layout.addWidget(self.disease_risk_label)
+        # 基因型参数编辑区
+        params_frame = QFrame()
+        params_frame.setStyleSheet("QFrame { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }")
+        params_frame_layout = QVBoxLayout(params_frame)
+        params_frame_layout.setContentsMargins(8, 6, 8, 8)
+        params_frame_layout.setSpacing(4)
+
+        params_title = QLabel("基因型参数 (可编辑)")
+        params_title.setStyleSheet("font-weight: bold; color: #1e293b; font-size: 11px;")
+        params_frame_layout.addWidget(params_title)
+
+        self.disease_params_stack = QStackedWidget()
+
+        # Page 0: X连锁
+        x_page = QWidget()
+        x_layout = QVBoxLayout(x_page)
+        x_layout.setContentsMargins(0, 4, 0, 0)
+        x_layout.setSpacing(6)
+        mother_x_row = QHBoxLayout()
+        mother_x_row.addWidget(QLabel("母亲 (X染色体):"))
+        self.disease_mother_x_combo = QComboBox()
+        self.disease_mother_x_combo.addItems(["X^A X^A", "X^A X^a", "X^a X^a"])
+        mother_x_row.addWidget(self.disease_mother_x_combo)
+        mother_x_row.addStretch()
+        x_layout.addLayout(mother_x_row)
+        father_x_row = QHBoxLayout()
+        father_x_row.addWidget(QLabel("父亲 (X染色体):"))
+        self.disease_father_x_combo = QComboBox()
+        self.disease_father_x_combo.addItems(["X^A", "X^a"])
+        father_x_row.addWidget(self.disease_father_x_combo)
+        father_x_row.addStretch()
+        x_layout.addLayout(father_x_row)
+        self.disease_params_stack.addWidget(x_page)
+
+        # Page 1: 常染色体
+        auto_page = QWidget()
+        auto_layout = QVBoxLayout(auto_page)
+        auto_layout.setContentsMargins(0, 4, 0, 0)
+        auto_layout.setSpacing(6)
+        female_row = QHBoxLayout()
+        female_row.addWidget(QLabel("母亲基因型:"))
+        self.disease_female_combo = QComboBox()
+        self.disease_female_combo.addItems(["AA", "Aa", "aa"])
+        female_row.addWidget(self.disease_female_combo)
+        female_row.addStretch()
+        auto_layout.addLayout(female_row)
+        male_row = QHBoxLayout()
+        male_row.addWidget(QLabel("父亲基因型:"))
+        self.disease_male_combo = QComboBox()
+        self.disease_male_combo.addItems(["AA", "Aa", "aa"])
+        male_row.addWidget(self.disease_male_combo)
+        male_row.addStretch()
+        auto_layout.addLayout(male_row)
+        self.disease_params_stack.addWidget(auto_page)
+
+        # Page 2: 未知模式
+        unknown_page = QWidget()
+        unknown_layout = QVBoxLayout(unknown_page)
+        unknown_layout.setContentsMargins(0, 4, 0, 0)
+        unknown_label = QLabel("请在 config.py 的 DISEASE_LIBRARY 中配置遗传方式")
+        unknown_label.setStyleSheet("color: #94a3b8; font-style: italic; font-size: 11px;")
+        unknown_layout.addWidget(unknown_label)
+        unknown_layout.addStretch()
+        self.disease_params_stack.addWidget(unknown_page)
+
+        params_frame_layout.addWidget(self.disease_params_stack)
+        group_layout.addWidget(params_frame)
 
         layout.addWidget(group)
         layout.addStretch()
@@ -501,36 +565,60 @@ class ControlPanel(QWidget):
         self._on_disease_selected(disease_names[0])
         return page
 
+    @staticmethod
+    def _normalize_genotype(genotype_str):
+        """将任意字母的等位基因归一化到规范标签 (X^A/X^a 或 A/a)
+
+        例: "X^C X^c" → "X^A X^a", "X^H" → "X^A", "hh" → "aa", "Hh" → "Aa"
+        """
+        if genotype_str.startswith("X^"):
+            parts = genotype_str.split()
+            norm_parts = []
+            for p in parts:
+                stripped = p.replace("X^", "")
+                if stripped.isupper():
+                    norm_parts.append("X^A")
+                elif stripped.islower():
+                    norm_parts.append("X^a")
+                else:
+                    norm_parts.append(p)
+            return " ".join(norm_parts)
+        else:
+            if genotype_str.isupper():
+                return "AA"
+            elif genotype_str.islower():
+                return "aa"
+            else:
+                return "Aa"
+
     def _on_disease_selected(self, name):
-        """疾病选择时更新信息"""
+        """疾病选择时更新信息并填充基因型参数"""
         from config import DISEASE_LIBRARY
         disease = DISEASE_LIBRARY.get(name, {})
         desc = f"遗传方式: {disease.get('inheritance', '')}\n{disease.get('description', '')}"
         self.disease_info_label.setText(desc)
-        risk = disease.get('offspring_risk', {})
-        risk_text = "子代风险: " + ", ".join(f"{k}:{v*100:.0f}%" for k, v in risk.items())
-        self.disease_risk_label.setText(risk_text)
 
-    def _apply_disease(self):
-        """加载疾病场景 — 切换到对应遗传模式并填入参数"""
-        from config import DISEASE_LIBRARY
-        name = self.disease_combo.currentText()
-        disease = DISEASE_LIBRARY.get(name, {})
-        mode = disease.get("mode")
-        if mode is None:
-            return
+        inheritance = disease.get("inheritance", "")
+        if "X连锁" in inheritance:
+            self.disease_params_stack.setCurrentIndex(0)
+        elif "常染色体" in inheritance:
+            self.disease_params_stack.setCurrentIndex(1)
+        else:
+            self.disease_params_stack.setCurrentIndex(2)
+
         params = disease.get("params", {})
-        # 保持 disease 模式不变，只填入参数
-        if mode == "sex":
-            if "mother_X" in params:
-                self.sex_mother_combo.setCurrentText(params["mother_X"])
-            if "father_X" in params:
-                self.sex_father_combo.setCurrentText(params["father_X"])
-        elif mode == "classic":
-            if "female" in params:
-                self.female_combo.setCurrentText(params["female"])
-            if "male" in params:
-                self.male_combo.setCurrentText(params["male"])
+        if "X连锁" in inheritance:
+            for key, combo in [("mother_X", self.disease_mother_x_combo), ("father_X", self.disease_father_x_combo)]:
+                val = params.get(key, "")
+                if val:
+                    norm = self._normalize_genotype(val)
+                    combo.setCurrentText(norm)
+        elif "常染色体" in inheritance:
+            for key, combo in [("female", self.disease_female_combo), ("male", self.disease_male_combo)]:
+                val = params.get(key, "")
+                if val:
+                    norm = self._normalize_genotype(val)
+                    combo.setCurrentText(norm)
 
     # ── 模式切换 ──
 
@@ -552,6 +640,8 @@ class ControlPanel(QWidget):
         self.current_mode = mode
         if mode == "multigene":
             self._build_mg_gene_inputs()
+        if mode == "disease":
+            self._on_disease_selected(self.disease_combo.currentText())
 
     def get_params(self):
         """从当前页获取参数，返回 dict"""
@@ -572,12 +662,28 @@ class ControlPanel(QWidget):
             params["father_abo"] = self.abo_father_combo.currentText()
         elif self.current_mode == "polygenic":
             params["gene_count"] = self.pg_gene_count.currentIndex() + 2
-            params["base_value"] = float(self.pg_base.currentText())
-            params["noise"] = float(self.pg_noise.currentText())
+            try:
+                params["base_value"] = float(self.pg_base.currentText())
+                params["noise"] = float(self.pg_noise.currentText())
+            except ValueError:
+                QMessageBox.warning(
+                    self, "参数错误",
+                    "基准值 或 环境噪声 不是有效数字，请检查输入。"
+                )
+                return params  # 返回当前 params，由调用方判断
         elif self.current_mode == "disease":
-            params["female"], params["male"] = self.get_parents()
-            params["mother_x"] = self.sex_mother_combo.currentText()
-            params["father_x"] = self.sex_father_combo.currentText()
+            params["disease_name"] = self.disease_combo.currentText()
+            from config import DISEASE_LIBRARY
+            disease_info = DISEASE_LIBRARY.get(params["disease_name"], {})
+            params["inheritance"] = disease_info.get("inheritance", "")
+            disease_params = {}
+            if "X连锁" in params["inheritance"]:
+                disease_params["mother_X"] = self.disease_mother_x_combo.currentText()
+                disease_params["father_X"] = self.disease_father_x_combo.currentText()
+            elif "常染色体" in params["inheritance"]:
+                disease_params["female"] = self.disease_female_combo.currentText()
+                disease_params["male"] = self.disease_male_combo.currentText()
+            params["disease_params"] = disease_params
         return params
 
     # ── 公开 API（保持向后兼容）──
@@ -601,6 +707,10 @@ class ControlPanel(QWidget):
             btn.setEnabled(not running)
         for w in self._input_widgets:
             w.setEnabled(not running)
+        if self.current_mode == "disease":
+            for attr in ["disease_mother_x_combo", "disease_father_x_combo", "disease_female_combo", "disease_male_combo"]:
+                if hasattr(self, attr):
+                    getattr(self, attr).setEnabled(not running)
         if running:
             self.run_button.setText("模拟中...")
             self.progress_bar.setFormat("运行中...")

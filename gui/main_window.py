@@ -244,10 +244,12 @@ class MainWindow(QMainWindow):
         self.mode_selector.mode_changed.connect(self._on_mode_changed)
 
     def _on_mode_changed(self, mode):
-        """模式切换时更新提示条和说明页"""
+        """模式切换时更新提示条、说明页和图表区"""
         desc = MODE_DESCRIPTIONS.get(mode, "")
         self.tip_label.setText(desc)
         self.help_text.setPlainText(desc)
+        mode_pages = {"classic": 0, "multigene": 1, "sex": 2, "multi_allele": 3, "polygenic": 4, "disease": 5}
+        self.chart_stack.setCurrentIndex(mode_pages.get(mode, 0))
 
     def _apply_styles(self):
         """应用全局样式"""
@@ -282,6 +284,8 @@ class MainWindow(QMainWindow):
             worker_params["parent2_genotype"] = params["father_abo"]
             status_info = f"ABO ({params['mother_abo']} × {params['father_abo']})"
         elif mode == "polygenic":
+            if "base_value" not in params or "noise" not in params:
+                return  # 参数解析失败（float 转换错误），get_params 已弹窗
             gene_n = params["gene_count"]
             worker_params["num_genes"] = gene_n
             worker_params["parent1_gtypes"] = ["Aa"] * gene_n
@@ -291,11 +295,10 @@ class MainWindow(QMainWindow):
             worker_params["effects"] = None
             status_info = f"数量性状 ({gene_n} 基因)"
         elif mode == "disease":
-            disease_name = self.control_panel.disease_combo.currentText()
-            worker_params["disease_name"] = disease_name
-            worker_params["parent1"] = params.get("female", "Aa")
-            worker_params["parent2"] = params.get("male", "Aa")
-            status_info = f"疾病模拟 ({disease_name})"
+            worker_params["disease_name"] = params["disease_name"]
+            worker_params["inheritance"] = params.get("inheritance", "")
+            worker_params["disease_params"] = params["disease_params"]
+            status_info = f"疾病模拟 ({params['disease_name']})"
 
         # 设置运行状态
         self.control_panel.set_running_state(True)
@@ -670,8 +673,6 @@ class MainWindow(QMainWindow):
         sim = report.get("sim_data", {})
         if sim:
             self.report_text.append("\n")
-            self.report_text.append("━" * 50)
-            self.report_text.append("  实际模拟数据 (10000次)")
             self.report_text.append("━" * 50)
             if "基因型分布" in sim:
                 for k, v in sim["基因型分布"].items():

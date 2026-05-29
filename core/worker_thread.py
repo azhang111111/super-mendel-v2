@@ -137,13 +137,31 @@ class SimulationWorker(QThread):
         self.simulation_finished.emit(report)
 
     def _run_disease(self):
-        """疾病模拟模式 — 根据DISEASE_LIBRARY用Punnett方格生成确定性家系报告"""
+        """疾病模拟模式 — 优先使用用户自定义参数，DISEASE_LIBRARY仅作fallback"""
         from config import DISEASE_LIBRARY
         params = self.params
         disease_name = params.get("disease_name", "")
-        disease_info = DISEASE_LIBRARY.get(disease_name, {})
-        inheritance = disease_info.get("inheritance", "")
-        disease_params = disease_info.get("params", {})
+
+        # inheritance: self.params 优先，为空再从 DISEASE_LIBRARY 查
+        inheritance = params.get("inheritance", "")
+
+        # disease_params: self.params 优先，为 None/空再从 DISEASE_LIBRARY 查
+        disease_params = params.get("disease_params", None)
+        if not disease_params:
+            disease_info = DISEASE_LIBRARY.get(disease_name, {})
+            disease_params = disease_info.get("params", {})
+            if not inheritance:
+                inheritance = disease_info.get("inheritance", "")
+        elif not inheritance:
+            disease_info = DISEASE_LIBRARY.get(disease_name, {})
+            inheritance = disease_info.get("inheritance", "")
+
+        # 仍无 inheritance → 从 disease_params 键推断
+        if not inheritance:
+            if "mother_X" in disease_params:
+                inheritance = "X连锁"
+            elif "female" in disease_params:
+                inheritance = "常染色体"
 
         pedigree_report = _build_pedigree_report(disease_name, inheritance, disease_params)
 
@@ -153,7 +171,7 @@ class SimulationWorker(QThread):
             mother_alleles = disease_params.get("mother_X", "X^H X^h").split()
             father_allele = disease_params.get("father_X", "X^H")
             from core.sex_chromosome import simulate_sex_chromosome_crossover
-            sim_result = simulate_sex_chromosome_crossover(mother_alleles, father_allele, 10000)
+            sim_result = simulate_sex_chromosome_crossover(mother_alleles, father_allele, self.params.get("num_simulations", 10000))
             daughters = sim_result.get("女儿", {})
             sons = sim_result.get("儿子", {})
             sim_data = {
@@ -164,22 +182,46 @@ class SimulationWorker(QThread):
                 "儿子患病": sum(v for k,v in sons.items() if any(c.islower() for c in k.replace("X^",""))),
                 "总模拟次数": sim_result.get("女儿数",0) + sim_result.get("儿子数",0),
             }
+            total = sim_data["总模拟次数"]
+            risk = {}
+            if total > 0:
+                risk["儿子患病率"] = round(sim_data["儿子患病"] / total, 4)
+                risk["女儿患病率"] = round(sim_data["女儿患病"] / total, 4)
+                risk["女儿携带率"] = round(sim_data["女儿携带"] / total, 4)
         else:
             female_str = disease_params.get("female", "Aa")
             male_str = disease_params.get("male", "Aa")
             female = female_str.split() if " " in female_str else list(female_str)
             male = male_str.split() if " " in male_str else list(male_str)
-            result, _, _ = simulate_crossover_vectorized(female, male, 10000)
-            sim_data = {"基因型分布": {k: int(v) for k,v in result.items()}, "总模拟次数": sum(result.values())}
+            result, _, _ = simulate_crossover_vectorized(female, male, self.params.get("num_simulations", 10000))
+            # 归一化多字符等位基因: HbSHbA → HbAHbS
+            normalized = {}
+            for k, v in result.items():
+                half = len(k) // 2
+                a1, a2 = k[:half], k[half:]
+                key = a2 + a1 if a2 < a1 else k
+                normalized[key] = normalized.get(key, 0) + int(v)
+            total = sum(result.values())
+            sim_data = {"基因型分布": normalized, "总模拟次数": total}
+            risk = {}
+            if total > 0:
+                all_lower = sum(v for k, v in normalized.items() if k.islower())
+                if "隐性" in inheritance:
+                    risk["患病率"] = round(all_lower / total, 4)
+                elif "显性" in inheritance:
+                    affected = sum(v for k, v in normalized.items() if not k.islower())
+                    risk["患病率"] = round(affected / total, 4)
+                else:
+                    risk["患病率"] = round(all_lower / total, 4)
 
-        risk = disease_info.get("offspring_risk", {})
         self.progress_updated.emit(100, 100)
 
         report = {
             "mode": "disease",
-            "total_simulations": 1,
+            "total_simulations": self.params.get("num_simulations", 10000),
             "disease_name": disease_name,
             "inheritance": inheritance,
+            "disease_params": disease_params,
             "offspring_risk": risk,
             "pedigree_report": pedigree_report,
             "sim_data": sim_data,

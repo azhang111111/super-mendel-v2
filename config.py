@@ -274,14 +274,14 @@ DISEASE_LIBRARY = {
         "mode": "classic",
         "inheritance": "常染色体显性",
         "description": "LDLR基因突变，杂合子发病率约1/250。早发心血管病风险显著升高。",
-        "params": {"female": "ff", "male": "Ff"},
+        "params": {"female": "hh", "male": "Hh"},
         "offspring_risk": {"患病率": 0.50, "正常率": 0.50}
     },
     "镰刀型贫血": {
         "mode": "classic",
         "inheritance": "常染色体共显性",
         "description": "HBB基因突变，杂合子有疟疾抗性。非洲裔发病率约1/500。",
-        "params": {"female": "HbA HbS", "male": "HbA HbS"},
+        "params": {"female": "Aa", "male": "Aa"},
         "offspring_risk": {"患病率": 0.25, "携带率": 0.50, "正常率": 0.25}
     },
 }

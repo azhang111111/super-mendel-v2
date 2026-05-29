@@ -435,33 +435,151 @@ class DiseasePunnettCanvas(FigureCanvas):
         self.ax.axis('off')
         disease_name = report.get('disease_name', '')
         inheritance = report.get('inheritance', '')
-        risk = report.get('offspring_risk', {})
+        sim = report.get('sim_data', {})
+        risk = report.get('offspring_risk', {})  # fallback
 
         title = f'Punnett 方格 - {disease_name} ({inheritance})'
         self.ax.set_title(title, fontweight='bold', fontsize=10, color=COLOR_TEXT_PRIMARY, pad=8)
 
-        if 'X连锁' in inheritance:
-            col_labels = ['男 X^H', '男 Y']
-            row_labels = ['女 X^H', '女 X^h']
-        else:
-            col_labels = ['男 A', '男 a']
-            row_labels = ['女 A', '女 a']
+        disease_params = report.get('disease_params', {})
+        COLOR_NORMAL = '#3b82f644'
+        COLOR_CARRIER = '#f43f5e44'
+        COLOR_AFFECTED = '#f43f5ecc'
 
-        if 'X连锁隐性' in inheritance:
-            cell_data = [['X^H X^H 正常', 'X^H Y 正常'], ['X^H X^h 携带者', 'X^h Y 患病']]
-            cell_colors = [['#3b82f644', '#3b82f644'], ['#f43f5e44', '#f43f5ecc']]
-        elif '常染色体隐性' in inheritance:
-            cell_data = [['AA 正常', 'Aa 携带者'], ['Aa 携带者', 'aa 患病']]
-            cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
-        elif '常染色体显性' in inheritance:
-            cell_data = [['Hh 患病', 'Hh 患病'], ['hh 正常', 'hh 正常']]
-            cell_colors = [['#f43f5ecc', '#f43f5ecc'], ['#3b82f644', '#3b82f644']]
-        elif '常染色体共显性' in inheritance:
-            cell_data = [['AA 正常', 'Aa 轻症'], ['Aa 轻症', 'aa 患病']]
-            cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
+        if disease_params:
+            if 'X连锁' in inheritance:
+                mother_str = disease_params.get('mother_X', 'X^H X^h')
+                father_str = disease_params.get('father_X', 'X^H')
+                female_gametes = mother_str.split()
+                male_gametes = [father_str, 'Y']
+
+                row_labels = [f'女 {g}' for g in female_gametes]
+                col_labels = [f'男 {g}' for g in male_gametes]
+
+                cell_data = []
+                cell_colors = []
+                for fg in female_gametes:
+                    data_row = []
+                    color_row = []
+                    for mg in male_gametes:
+                        fg_mutant = any(c.islower() for c in fg.replace('X^', ''))
+                        if mg == 'Y':
+                            genotype = f'{fg} Y'
+                            if 'X连锁隐性' in inheritance:
+                                phenotype = '患病' if fg_mutant else '正常'
+                            else:  # X连锁显性
+                                phenotype = '患病' if fg_mutant else '正常'
+                        else:
+                            alleles = sorted([fg, mg])
+                            genotype = ' '.join(alleles)
+                            mg_mutant = any(c.islower() for c in mg.replace('X^', ''))
+                            if 'X连锁隐性' in inheritance:
+                                if fg_mutant and mg_mutant:
+                                    phenotype = '患病'
+                                elif fg_mutant or mg_mutant:
+                                    phenotype = '携带者'
+                                else:
+                                    phenotype = '正常'
+                            else:  # X连锁显性
+                                phenotype = '患病' if (fg_mutant or mg_mutant) else '正常'
+
+                        if '患病' in phenotype:
+                            color = COLOR_AFFECTED
+                        elif '携带者' in phenotype or '轻症' in phenotype:
+                            color = COLOR_CARRIER
+                        else:
+                            color = COLOR_NORMAL
+
+                        data_row.append(f'{genotype} {phenotype}')
+                        color_row.append(color)
+                    cell_data.append(data_row)
+                    cell_colors.append(color_row)
+
+            elif '常染色体' in inheritance:
+                female_str = disease_params.get('female', 'Aa')
+                male_str = disease_params.get('male', 'Aa')
+                female_gametes = list(female_str)
+                male_gametes = list(male_str)
+
+                row_labels = [f'女 {g}' for g in female_gametes]
+                col_labels = [f'男 {g}' for g in male_gametes]
+
+                cell_data = []
+                cell_colors = []
+                for fg in female_gametes:
+                    data_row = []
+                    color_row = []
+                    for mg in male_gametes:
+                        genotype = ''.join(sorted([fg, mg]))
+                        all_upper = genotype.isupper()
+                        all_lower = genotype.islower()
+
+                        if '常染色体隐性' in inheritance:
+                            if all_lower:
+                                phenotype = '患病'
+                            elif all_upper:
+                                phenotype = '正常'
+                            else:
+                                phenotype = '携带者'
+                        elif '常染色体显性' in inheritance:
+                            if all_lower:
+                                phenotype = '正常'
+                            else:
+                                phenotype = '患病'
+                        elif '常染色体共显性' in inheritance:
+                            if all_lower:
+                                phenotype = '患病'
+                            elif all_upper:
+                                phenotype = '正常'
+                            else:
+                                phenotype = '轻症'
+                        else:
+                            phenotype = '?'
+
+                        if '患病' in phenotype:
+                            color = COLOR_AFFECTED
+                        elif '携带者' in phenotype or '轻症' in phenotype:
+                            color = COLOR_CARRIER
+                        else:
+                            color = COLOR_NORMAL
+
+                        data_row.append(f'{genotype} {phenotype}')
+                        color_row.append(color)
+                    cell_data.append(data_row)
+                    cell_colors.append(color_row)
+            else:
+                # fallback for unknown inheritance with params
+                col_labels = ['男 A', '男 a']
+                row_labels = ['女 A', '女 a']
+                cell_data = [['AA 正常', 'Aa 携带者'], ['Aa 携带者', 'aa 患病']]
+                cell_colors = [[COLOR_NORMAL, COLOR_CARRIER], [COLOR_CARRIER, COLOR_AFFECTED]]
         else:
-            cell_data = [['AA 正常', 'Aa 携带者'], ['Aa 携带者', 'aa 患病']]
-            cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
+            # fallback when disease_params is missing
+            if 'X连锁' in inheritance:
+                col_labels = ['男 X^H', '男 Y']
+                row_labels = ['女 X^H', '女 X^h']
+            elif '常染色体显性' in inheritance:
+                col_labels = ['男 H', '男 h']
+                row_labels = ['女 H', '女 h']
+            else:
+                col_labels = ['男 A', '男 a']
+                row_labels = ['女 A', '女 a']
+
+            if 'X连锁隐性' in inheritance:
+                cell_data = [['X^H X^H 正常', 'X^H Y 正常'], ['X^H X^h 携带者', 'X^h Y 患病']]
+                cell_colors = [[COLOR_NORMAL, COLOR_NORMAL], [COLOR_CARRIER, COLOR_AFFECTED]]
+            elif '常染色体隐性' in inheritance:
+                cell_data = [['AA 正常', 'Aa 携带者'], ['Aa 携带者', 'aa 患病']]
+                cell_colors = [[COLOR_NORMAL, COLOR_CARRIER], [COLOR_CARRIER, COLOR_AFFECTED]]
+            elif '常染色体显性' in inheritance:
+                cell_data = [['Hh 患病', 'Hh 患病'], ['hh 正常', 'hh 正常']]
+                cell_colors = [[COLOR_AFFECTED, COLOR_AFFECTED], [COLOR_NORMAL, COLOR_NORMAL]]
+            elif '常染色体共显性' in inheritance:
+                cell_data = [['AA 正常', 'Aa 轻症'], ['Aa 轻症', 'aa 患病']]
+                cell_colors = [[COLOR_NORMAL, COLOR_CARRIER], [COLOR_CARRIER, COLOR_AFFECTED]]
+            else:
+                cell_data = [['AA 正常', 'Aa 携带者'], ['Aa 携带者', 'aa 患病']]
+                cell_colors = [[COLOR_NORMAL, COLOR_CARRIER], [COLOR_CARRIER, COLOR_AFFECTED]]
 
         table = self.ax.table(
             cellText=cell_data, rowLabels=row_labels, colLabels=col_labels,
@@ -471,7 +589,17 @@ class DiseasePunnettCanvas(FigureCanvas):
         table.set_fontsize(9)
         table.scale(1.2, 1.5)
 
-        risk_text = '子代风险: ' + '  '.join(f'{k}:{v*100:.0f}%' for k, v in risk.items())
+        # 优先用实际模拟数据
+        if sim and "总模拟次数" in sim:
+            total = sim["总模拟次数"]
+            if "基因型分布" in sim:
+                items = [(k, v/total*100) for k, v in sim["基因型分布"].items()]
+            else:
+                keys = ["女儿正常","女儿携带","女儿患病","儿子正常","儿子患病"]
+                items = [(k, sim.get(k,0)/total*100) for k in keys if k in sim]
+            risk_text = '子代风险: ' + '  '.join(f'{k}:{v:.1f}%' for k, v in items)
+        else:
+            risk_text = '子代风险: ' + '  '.join(f'{k}:{v*100:.0f}%' for k, v in risk.items())
         self.ax.text(0.5, 0.05, risk_text, transform=self.ax.transAxes,
                      ha='center', fontsize=10, fontweight='bold', color=COLOR_TEXT_PRIMARY,
                      bbox=dict(boxstyle='round,pad=0.5', facecolor='#f1f5f9', alpha=0.8))
