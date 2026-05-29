@@ -398,8 +398,8 @@ class PunnettCanvas(FigureCanvas):
             cell_text.append(row_text)
             cell_colors.append(row_color)
 
-        row_labels = [f'♂ {a}' for a in rows]
-        col_labels = [f'♀ {a}' for a in cols]
+        row_labels = [f'男 {a}' for a in rows]
+        col_labels = [f'女 {a}' for a in cols]
         table = self.ax.table(
             cellText=cell_text, rowLabels=row_labels, colLabels=col_labels,
             cellLoc='center', loc='center', cellColours=cell_colors
@@ -441,26 +441,26 @@ class DiseasePunnettCanvas(FigureCanvas):
         self.ax.set_title(title, fontweight='bold', fontsize=10, color=COLOR_TEXT_PRIMARY, pad=8)
 
         if 'X连锁' in inheritance:
-            col_labels = ['male X^H', 'male Y']
-            row_labels = ['female X^H', 'female X^h']
+            col_labels = ['男 X^H', '男 Y']
+            row_labels = ['女 X^H', '女 X^h']
         else:
-            col_labels = ['male A', 'male a']
-            row_labels = ['female A', 'female a']
+            col_labels = ['男 A', '男 a']
+            row_labels = ['女 A', '女 a']
 
         if 'X连锁隐性' in inheritance:
-            cell_data = [['X^H X^H normal', 'X^H Y normal'], ['X^H X^h carrier', 'X^h Y affected']]
+            cell_data = [['X^H X^H 正常', 'X^H Y 正常'], ['X^H X^h 携带者', 'X^h Y 患病']]
             cell_colors = [['#3b82f644', '#3b82f644'], ['#f43f5e44', '#f43f5ecc']]
         elif '常染色体隐性' in inheritance:
-            cell_data = [['AA normal', 'Aa carrier'], ['Aa carrier', 'aa affected']]
+            cell_data = [['AA 正常', 'Aa 携带者'], ['Aa 携带者', 'aa 患病']]
             cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
         elif '常染色体显性' in inheritance:
-            cell_data = [['Hh affected', 'Hh affected'], ['hh normal', 'hh normal']]
+            cell_data = [['Hh 患病', 'Hh 患病'], ['hh 正常', 'hh 正常']]
             cell_colors = [['#f43f5ecc', '#f43f5ecc'], ['#3b82f644', '#3b82f644']]
         elif '常染色体共显性' in inheritance:
-            cell_data = [['AA normal', 'Aa mild'], ['Aa mild', 'aa affected']]
+            cell_data = [['AA 正常', 'Aa 轻症'], ['Aa 轻症', 'aa 患病']]
             cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
         else:
-            cell_data = [['AA normal', 'Aa carrier'], ['Aa carrier', 'aa affected']]
+            cell_data = [['AA 正常', 'Aa 携带者'], ['Aa 携带者', 'aa 患病']]
             cell_colors = [['#3b82f644', '#f43f5e44'], ['#f43f5e44', '#f43f5ecc']]
 
         table = self.ax.table(
@@ -471,7 +471,7 @@ class DiseasePunnettCanvas(FigureCanvas):
         table.set_fontsize(9)
         table.scale(1.2, 1.5)
 
-        risk_text = 'risk: ' + '  '.join(f'{k}:{v*100:.0f}%' for k, v in risk.items())
+        risk_text = '子代风险: ' + '  '.join(f'{k}:{v*100:.0f}%' for k, v in risk.items())
         self.ax.text(0.5, 0.05, risk_text, transform=self.ax.transAxes,
                      ha='center', fontsize=10, fontweight='bold', color=COLOR_TEXT_PRIMARY,
                      bbox=dict(boxstyle='round,pad=0.5', facecolor='#f1f5f9', alpha=0.8))
